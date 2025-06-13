@@ -413,3 +413,138 @@ Follow the instructions, examples, and message content exactly as provided.
 ---
 
 
+# 세번째 재구성 및 수정 요청사항
+
+## 1. 목적
+
+- step8 페이지의 상단 UI, 버튼, 제목, 페이지네이션, 충족조건·오류·표시 등 시각적, 기능적 배치와 동작을 첨부 그림과 상세 요구에 따라 완전히 수정하는 것.
+
+---
+
+## 2. 상세 요구 및 기능/레이아웃 개선
+
+① **상단 파일다운로드 버튼**
+   - 좌측 상단에 “파일 다운로드” 버튼 배치.
+   - 버튼 텍스트가 두 줄로 줄바꿈되거나 잘리지 않게 반드시 한 줄로만 표시. (버튼 너비/텍스트 크기 조절)
+   - 버튼 주변 여백은 과도하지 않게 적절히 조정.
+
+② **상단 인쇄하기 버튼**
+   - 우측 상단에 “인쇄하기” 버튼 배치.
+   - 버튼 텍스트가 반드시 한 줄로만 표시되도록, 버튼 너비와 텍스트 크기 조절.
+   - 버튼 주변 여백은 과도하지 않게 조정.
+   - 인쇄하기 버튼 클릭 시 실제 사용자 환경에서 프린트 창이 열리도록 기능 정상화(window.print() 등 브라우저 표준 방식 완벽 연동, Streamlit 환경에서도 동작 보장).
+
+③ **상단 제목·페이지 번호 배치**
+   - “파일 다운로드”와 “인쇄하기” 버튼은 첫 번째 줄(최상단, 좌/우측)에만 위치. (중앙은 비워둠)
+   - **두 번째 줄에 중앙 정렬로** “「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시” 제목만 단독 한 줄 배치. 버튼 줄과 분리!
+   - **세 번째 줄에는** 페이지 번호(예: “1 / 7”)만 중앙정렬로 제목 아래 별도 한 줄 배치.
+   - 어떤 경우에도 버튼 줄에 제목·페이지 번호가 오지 않도록 할 것. (줄바꿈/정렬 필수)
+
+④ **오류 태그/불필요 HTML 출력 방지**
+   - 각 페이지 상단에 <br><h5>1. 신청인</h5> 등 HTML 태그가 코드 그대로 노출되지 않게.
+   - 표/텍스트 등 실제 데이터만 노출되고, HTML 코드는 모두 렌더링된 결과로만 보여야 함.
+   - Streamlit에서 `st.markdown(..., unsafe_allow_html=True)` 등 사용 시 HTML 코드를 그대로 노출하는 버그 해결.
+
+⑤ **충족조건 표 누락 오류 해결**
+   - “충족조건” 표는 동일 title_key의 step6 {requirements}를 기반으로, 조건 개수만큼 줄 생성.
+   - 각 줄에는 “충족조건” 열과 “조건 충족 여부” 열 포함.
+   - 각 조건에 대해 step6_items[title_key]["requirements"][키]의 텍스트, step6_selections[title_key+"_req_"+키]가 “충족”이면 ○, “미충족”이면 ×로 출력.
+   - 충족조건 표 내용이 누락 없이 전부 생성되어야 하며, 표의 구조(머릿줄, 각 줄, 정렬)는 첨부 워드 양식과 동일하게 구성.
+
+⑥ **페이지 구조 요약**
+   - 1줄: 좌 “파일 다운로드” 버튼 / 우 “인쇄하기” 버튼 (한 줄, 중간 비움)
+   - 2줄: 제목 “「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시” (중앙, 단독 한 줄)
+   - 3줄: 페이지 번호(“현재/총페이지”) (중앙, 단독 한 줄)
+   - 그 이후: 각 페이지별 표/항목 내용(불필요 HTML, 태그, 오류 문구 등 없음, 모든 표는 첨부 워드 양식 구조와 일치)
+   - 버튼/제목/페이지번호가 한 줄에 섞여서 나오지 않게 반드시 분리.
+
+⑦ **레이아웃 아스키 예시**
+
+┌──────────────────────────────────────────────┐
+│ [파일 다운로드]                     [인쇄하기] │ ← (첫 번째 줄, 양쪽에 버튼. 제목 없음)
+│         「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시         │ ← (두 번째 줄, 중앙, 제목만)
+│                        1 / 7                 │ ← (세 번째 줄, 중앙, 페이지 번호만)
+└──────────────────────────────────────────────┘
+
+---
+
+## 3. 추가 안내
+
+- 각 항목(버튼, 제목, 페이지번호, 인쇄, 표, 오류 등)은 동시에 적용되어야 함.
+- 요청한 모든 사항이 100% 일치하게 구현되지 않을 경우 결과물 불인정.
+- 각 요구사항의 충족여부를 세부적으로 검증할 예정이므로, 한 줄, 한 칸, 한 글자도 요구와 다르면 안 됨.
+- UI 및 기능 구현 시 첨부된 그림(스크린샷)과 완전히 동일한 구조로 배치할 것. (단, 위의 조정안이 더 우선)
+
+
+# Third Restructuring and Revision Request
+
+## 1. Purpose
+
+- To completely revise the step8 page UI, buttons, title, pagination, satisfaction requirements, error displays, and all visual/functional layouts and behaviors in accordance with the attached screenshots and the detailed requirements below.
+
+---
+
+## 2. Detailed Requirements and UI/Functional Improvements
+
+① **File Download Button (Top-Left)**
+   - Place a "[파일 다운로드]" button at the top left.
+   - The button label must always appear on a single line (never split/wrapped). Adjust button width or font size as needed.
+   - Ensure button margins are not excessive.
+
+② **Print Button (Top-Right)**
+   - Place a "[인쇄하기]" button at the top right, on the same horizontal line as the file download button.
+   - The label must always display on a single line. Adjust button width or font size if necessary.
+   - Margins around the button must not be excessive.
+   - The print button must open the actual print dialog on the user's computer (implement using standard browser-compatible approaches such as `window.print()`; must function correctly in Streamlit regardless of environment).
+
+③ **Page Title and Pagination Display**
+   - **First Row:** Only the "[파일 다운로드]" (left) and "[인쇄하기]" (right) buttons, with the rest of the row empty.
+   - **Second Row:** Centered, display only the page title:
+     - "「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시"
+     - The title must always be on its own line, not sharing the row with any button or page number.
+   - **Third Row:** Directly below the title, center-aligned, display the page number (e.g., "1 / 7") on its own line.
+   - Under no circumstances should the buttons, title, or page number be displayed on the same line together. Each element must occupy its own distinct row.
+
+④ **Prevent Raw HTML/Tag/Error Output**
+   - Do NOT display any raw HTML tags or unrendered code at the top of each page (e.g., `<br><h5>1. 신청인</h5>...` etc).
+   - Only properly rendered tables and text data should be visible to the user.
+   - When using Streamlit (e.g., `st.markdown(..., unsafe_allow_html=True)`), ensure that raw HTML is rendered, not printed as literal text.
+
+⑤ **Satisfaction Requirements Table – Omission/Error Fix**
+   - The "Satisfaction Requirements" table must:
+     - For the current `title_key`, use all requirements from step6 (`step6_items[title_key]["requirements"]`).
+     - Generate a row for each requirement, with two columns: "Requirement" and "Met or Not Met".
+     - For each row:
+       - Display the requirement text.
+       - Display "○" if `step6_selections[title_key+"_req_"+key] == "충족"`, or "×" if "미충족".
+   - No requirement row may be omitted.
+   - Table structure (headers, rows, alignment) must strictly match the official Word form template.
+
+⑥ **UI Layout Summary**
+   - Row 1: Left – [파일 다운로드] button, Right – [인쇄하기] button. No title or page number here.
+   - Row 2: Centered page title only (Korean as above), as a single line.
+   - Row 3: Centered page number (e.g., "1 / 7"), as a single line.
+   - Following rows: Page content, tables, etc. (No raw HTML, tags, or extraneous error messages.)
+   - Buttons, title, and page number must never share a row – always separate.
+
+⑦ **UI Layout Example (ASCII Art)**
+
+┌──────────────────────────────────────────────┐
+│ [파일 다운로드]                     [인쇄하기] │ ← (First row: both buttons on sides, no title)
+│         「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시         │ ← (Second row: centered title only)
+│                        1 / 7                 │ ← (Third row: centered page number only)
+└──────────────────────────────────────────────┘
+
+---
+
+## 3. Additional Notes
+
+- All changes (buttons, title, page number, print, table rendering, error prevention) must be applied together.
+- Output will be rejected if any single requirement here is not followed exactly.
+- All details (line, cell, margin, header, table, etc.) will be strictly checked – any deviation will result in rejection.
+- The UI and layout must match the attached screenshots precisely unless a more explicit textual instruction above overrides them.
+
+
+
+
+
