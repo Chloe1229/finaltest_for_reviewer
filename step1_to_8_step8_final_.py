@@ -1407,18 +1407,25 @@ def clone_row(table, row_idx):
     tr = table.rows[row_idx]._tr
     new_tr = deepcopy(tr)
     table._tbl.insert(row_idx + 1, new_tr)
-    for cell in table.rows[row_idx + 1].cells:
+    new_row = table.rows[row_idx + 1]
+    for cell in new_row.cells:
         cell.text = ""
-    return table.rows[row_idx + 1]
-
+        set_cell_font(cell, 11)
+    return new_row
+    
 def create_application_docx(current_key, result, requirements, selections, output2_text_list, file_path):
     # Load template to preserve all styles and merges
     doc = Document('제조방법변경 신청양식_empty_.docx')
     table = doc.tables[0]
 
-    def clone_row(row_idx):
+    def clone_row(table, row_idx):
         new_tr = deepcopy(table.rows[row_idx]._tr)
         table._tbl.insert(row_idx + 1, new_tr)
+        new_row = table.rows[row_idx + 1]
+        for cell in new_row.cells:
+            cell.text = ""
+            set_cell_font(cell, 11)
+        return new_row
 
     # Ensure header cells use 12pt font
     header_cells = [
@@ -1431,8 +1438,6 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     req_items = list(requirements.items())
     max_reqs = max(5, min(15, len(req_items)))
     extra_reqs = max_reqs - 5
-    for i in range(extra_reqs):
-        clone_row(table, 10 + i)
 
     doc_start = 12 + extra_reqs
 
@@ -1464,8 +1469,9 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     max_reqs = max(5, min(15, len(req_items)))
     extra_reqs = max_reqs - 5
     for i in range(extra_reqs):
-        clone_row(table, 10 + i)
-    for i in range(max_reqs):
+        new_row = clone_row(table, 10 + i)
+        for cell in new_row.cells:
+            set_cell_font(cell, 11)    for i in range(max_reqs):
         row = 6 + i
         if i < len(req_items):
             rk, text = req_items[i]
@@ -1489,9 +1495,9 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     max_docs = max(5, len(output2_text_list))
     extra_docs = max(0, max_docs - 7)
     for i in range(extra_docs):
-        new_row = clone_row(table, 18 + i)
+        new_row = clone_row(table, 18 + extra_reqs + i)
         for cell in new_row.cells:
-            set_cell_font(cell, 11)        
+            set_cell_font(cell, 11)    
     for i in range(max_docs):
         row = doc_start + i
         line = output2_text_list[i] if i < len(output2_text_list) else ""
@@ -1585,10 +1591,7 @@ if st.session_state.step == 8:
             "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
             unsafe_allow_html=True,
         )
-        st.markdown(
-            f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
-            unsafe_allow_html=True,
-        )
+
 
         output1_html = result["output_1_text"].replace("\n", "<br>")
 
@@ -1652,13 +1655,21 @@ if st.session_state.step == 8:
         html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
     html += "</table>"
     st.markdown(html, unsafe_allow_html=True)
-    if st.button("⬅ 이전"):
-        if st.session_state.step8_page == 0:
-            st.session_state.step = 7
-            if "step8_page" in st.session_state:
-                del st.session_state["step8_page"]
-        else:
-            st.session_state.step8_page -= 1
-    with col_right:
+
+    st.markdown(
+        f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
+        unsafe_allow_html=True,
+    )
+
+    nav_left, nav_right = st.columns(2)
+    with nav_left:
+        if st.button("⬅ 이전"):
+            if st.session_state.step8_page == 0:
+                st.session_state.step = 7
+                if "step8_page" in st.session_state:
+                    del st.session_state["step8_page"]
+            else:
+                st.session_state.step8_page -= 1
+    with nav_right:
         if st.button("다음 ➡") and st.session_state.step8_page < total_pages - 1:
             st.session_state.step8_page += 1
