@@ -1593,10 +1593,6 @@ if st.session_state.step == 8:
             "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
             unsafe_allow_html=True,
         )
-        st.markdown(
-            f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
-            unsafe_allow_html=True,
-        )
         
         html = textwrap.dedent(
             f"""
@@ -1662,7 +1658,12 @@ td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align:
         html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
     html += "</table>"
     st.markdown(html, unsafe_allow_html=True)
-    # Always show page number and navigation controls
+
+    # Display page number and navigation for all pages
+    st.markdown(
+        f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
+        unsafe_allow_html=True,
+    )
 
     nav_left, nav_right = st.columns(2)
     with nav_left:
@@ -1676,3 +1677,5 @@ td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align:
     with nav_right:
         if st.button("다음 ➡") and st.session_state.step8_page < total_pages - 1:
             st.session_state.step8_page += 1
+
+
