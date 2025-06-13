@@ -5,6 +5,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from copy import deepcopy
 from tempfile import NamedTemporaryFile
 import os
+import textwrap
+import re
+
 
 # ===== 초기 상태 정의 =====
 if "step" not in st.session_state:
@@ -1445,7 +1448,7 @@ def create_application_docx(current_key, result, requirements, selections, outpu
 
     # 2-3. 변경유형 / 신청유형 (row 4)
     change_text = result["title_text"]
-    apply_text = f"{result['output_1_tag']}\n{result['output_1_text']}"
+    apply_text = result["output_1_tag"]
     for c in [0, 1]:
         cell = table.cell(4, c)
         cell.text = change_text
@@ -1553,6 +1556,12 @@ if st.session_state.step == 8:
             for rk in requirements
         }
         output2_text_list = [line.strip() for line in result.get("output_2_text", "").split("\n") if line.strip()]
+        for idx, line in enumerate(output2_text_list):
+            if re.match(r"^\d+[.)]", line):
+                output2_text_list = output2_text_list[idx:]
+                break
+        else:
+            output2_text_list = []
         output2_text_list = output2_text_list[:15]
         with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
             file_path = tmp.name
@@ -1578,7 +1587,7 @@ if st.session_state.step == 8:
         os.remove(file_path)
         with col_right:
             if st.button("🖨 인쇄하기"):
-                st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
+                st.components.v1.html("<script>window.print();</script>", height=0)
                 
         st.markdown(
             "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
@@ -1589,42 +1598,42 @@ if st.session_state.step == 8:
             unsafe_allow_html=True,
         )
         
-        output1_html = result["output_1_text"].replace("\n", "<br>")
-
-        html = f"""
-    <style>
-    table {{ border-collapse: collapse; width: 100%; font-family: 'Nanum Gothic', sans-serif; }}
-    td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align: middle; }}
-    .title {{ font-weight: bold; font-size: 12pt; }}
-    .normal {{ font-size: 11pt; }}
-    </style>
-    <table>
-      <tr>
-        <td class='title' rowspan='3' style='width:11%'>1. 신청인</td>
-        <td class='normal' style='width:10%'>성명</td>
-        <td colspan='3' style='width:79%'></td>
-      </tr>
-      <tr>
-        <td class='normal'>제조소(영업소) 명칭</td>
-        <td colspan='3'></td>
-      </tr>
-      <tr>
-        <td class='normal'>변경신청 제품명</td>
-        <td colspan='3'></td>
-      </tr>
-      <tr>
-        <td class='title' colspan='2'>2. 변경유형</td>
-        <td class='title' colspan='3'>3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택)</td>
-      </tr>
-      <tr>
-        <td colspan='2' class='normal'>{result["title_text"]}</td>
-        <td colspan='3' class='normal'>{result["output_1_tag"]}<br>{output1_html}</td>
-      </tr>
-      <tr>
-        <td class='title' colspan='3'>4. 충족조건</td>
-        <td class='title' colspan='2'>조건 충족 여부(○, X 중 선택)</td>
-      </tr>
-        """
+        html = textwrap.dedent(
+            f"""
+<style>
+table {{ border-collapse: collapse; width: 100%; font-family: 'Nanum Gothic', sans-serif; }}
+td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align: middle; }}
+.title {{ font-weight: bold; font-size: 12pt; }}
+.normal {{ font-size: 11pt; }}
+</style>
+<table>
+  <tr>
+    <td class='title' rowspan='3' style='width:11%'>1. 신청인</td>
+    <td class='normal' style='width:10%'>성명</td>
+    <td colspan='3' style='width:79%'></td>
+  </tr>
+  <tr>
+    <td class='normal'>제조소(영업소) 명칭</td>
+    <td colspan='3'></td>
+  </tr>
+  <tr>
+    <td class='normal'>변경신청 제품명</td>
+    <td colspan='3'></td>
+  </tr>
+  <tr>
+    <td class='title' colspan='2'>2. 변경유형</td>
+    <td class='title' colspan='3'>3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택)</td>
+  </tr>
+  <tr>
+    <td colspan='2' class='normal'>{result["title_text"]}</td>
+    <td colspan='3' class='normal'>{result["output_1_tag"]}</td>
+  </tr>
+  <tr>
+    <td class='title' colspan='3'>4. 충족조건</td>
+    <td class='title' colspan='2'>조건 충족 여부(○, X 중 선택)</td>
+  </tr>
+"""
+        )
 
         req_items = list(requirements.items())
         max_reqs = max(5, min(15, len(req_items)))
@@ -1638,13 +1647,15 @@ if st.session_state.step == 8:
                 symbol = ""
             html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
 
-        html += """
-      <tr>
-        <td class='title' colspan='3'>5. 필요서류 (해당하는 필요서류 기재)</td>
-        <td class='title' style='width:8%'>구비 여부<br>(○, X 중 선택)</td>
-        <td class='title' style='width:13%'>해당 페이지 표시</td>
-      </tr>
-    """
+        html += textwrap.dedent(
+            """
+  <tr>
+    <td class='title' colspan='3'>5. 필요서류 (해당하는 필요서류 기재)</td>
+    <td class='title' style='width:8%'>구비 여부<br>(○, X 중 선택)</td>
+    <td class='title' style='width:13%'>해당 페이지 표시</td>
+  </tr>
+"""
+        )
     max_docs = max(5, len(output2_text_list))
     for i in range(max_docs):
         line = output2_text_list[i] if i < len(output2_text_list) else ""
