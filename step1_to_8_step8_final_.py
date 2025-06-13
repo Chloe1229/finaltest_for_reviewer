@@ -1365,22 +1365,18 @@ if st.session_state.step == 7:
             )
 
     if visible_results:
-        tag, output1, output2 = visible_results[0]
-        st.session_state.step7_results[current_key] = {
-            "title_text": step6_items[current_key]["title"],
-            "output_1_tag": tag,
-            "output_1_text": output1,
-            "output_2_text": output2,
-        }
+         st.session_state.step7_results[current_key] = [
+            {
+                "title_text": step6_items[current_key]["title"],
+                "output_1_tag": tag,
+                "output_1_text": output1,
+                "output_2_text": output2,
+            }
+            for tag, output1, output2 in visible_results
+        ]
         for tag, output1, output2 in visible_results:
-            st.session_state.step7_results[current_key].append(
-                {
-                    "title_text": step6_items[current_key]["title"],
-                    "output_1_tag": tag,
-                    "output_1_text": output1,
-                    "output_2_text": output2,
-                }
-            )
+            st.markdown(output1, unsafe_allow_html=True)
+            st.text(output2)
 
     else:
         st.write(
@@ -1388,7 +1384,7 @@ if st.session_state.step == 7:
             "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
             "범위에 해당하지 않는 것으로 확인됩니다"
         )
-
+        
     col1, col2 = st.columns(2)
     with col1:
         st.button("이전단계로", on_click=go_prev_step7_page)
@@ -1456,134 +1452,115 @@ def create_application_docx(current_key, result, requirements, selections, outpu
 # Step 8 begins
 if st.session_state.step == 8:
     step7_results = st.session_state.get("step7_results", {})
-    step6_items = st.session_state["step6_items"]
+    step6_items = st.session_state.get("step6_items", {})
     step6_selections = st.session_state.get("step6_selections", {})
 
-    # Build page list using title_key and result index
-    page_list = []
-    for tkey, results in step7_results.items():
-        if isinstance(results, dict):
-            results = [results]
-            step7_results[tkey] = results
-        for idx in range(len(results)):
-            page_list.append((tkey, idx))
-
+    page_list = [
+        (title_key, idx)
+        for title_key, results in step7_results.items()
+        for idx in range(len(results))
+    ]
     if not page_list:
         st.error("결과가 없어 Step7로 돌아갑니다.")
         st.session_state.step = 7
         st.stop()
-        
     if "step8_page" not in st.session_state:
         st.session_state.step8_page = 0
 
     page = st.session_state.step8_page
     total_pages = len(page_list)
-    current_key, current_idx = page_list[page]
-    result = step7_results[current_key][current_idx]
-    result_empty = isinstance(result, list) and len(result) == 0
-
-    if result_empty:
-        st.write(
-            "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
-            "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
-            "범위에 해당하지 않는 것으로 확인됩니다."
+    current_title_key, current_idx = page_list[page]
+    result = step7_results[current_title_key][current_idx]
+    requirements = step6_items.get(current_title_key, {}).get("requirements", {})
+    
+    selections = {
+        f"{current_title_key}_req_{rk}": step6_selections.get(f"{current_title_key}_req_{rk}", "")
+        for rk in requirements
+    }
+    output2_text_list = [line.strip() for line in result.get("output_2_text", "").split("\n") if line.strip()]
+    with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        file_path = tmp.name
+        create_application_docx(
+            current_title_key,
+            result,
+            requirements,
+            selections,
+            output2_text_list,
+            file_path,
         )
-    else:
-        if not isinstance(result, dict):
-            st.warning("해당 페이지의 데이터 형식이 잘못되었습니다.")
-            st.stop()
-        requirements = step6_items.get(current_key, {}).get("requirements", {})
-        selections = {
-            f"{current_key}_req_{rk}": step6_selections.get(f"{current_key}_req_{rk}", "")
-            for rk in requirements
-        }
-        output2_text_list = [
-            line.strip()
-            for line in result.get("output_2_text", "").split("\n")
-            if line.strip()
-        ]
-        with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-            file_path = tmp.name
-            create_application_docx(
-                current_key,
-                result,
-                requirements,
-                selections,
-                output2_text_list,
-                file_path,
-            )
 
-        with open(file_path, "rb") as f:
-            file_bytes = f.read()
+    with open(file_path, "rb") as f:
+        file_bytes = f.read()
 
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col1:
-            st.download_button(
-                "📄 파일 다운로드",
-                file_bytes,
-            file_name=f"신청서_{current_key}_{current_idx}.docx",
-            )
-        os.remove(file_path)
-        with col2:
-            st.markdown(
-                f"<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시<br>{page+1} / {total_pages}</h5>",
-                unsafe_allow_html=True,
-            )
-        with col3:
-            if st.button("🖨 인쇄하기"):
-                st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col1:
+        st.download_button(
+            "📄 파일 다운로드",
+            file_bytes,
+            file_name=f"신청서_{current_title_key}_{current_idx+1}.docx",
+        )
+    
+    os.remove(file_path)
+    with col2:
+        st.markdown(
+            f"<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시<br>{page+1} / {total_pages}</h5>",
+            unsafe_allow_html=True,
+        )
+    with col3:
+        if st.button("🖨 인쇄하기"):
+            st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
 
-        output1_html = result["output_1_text"].replace("\n", "<br>")
+    output1_html = result["output_1_text"].replace("\n", "<br>")
 
-        html = f"""
-        <style>
-        table, th, td {{
-            border: 1px solid black; border-collapse: collapse;
-            padding: 6px; text-align: center; vertical-align: middle;
-            font-family: 'Nanum Gothic', sans-serif;
-        }}
-        th, td {{
-            font-size: 14px;
-            line-height: 1.4;
+    html = f"""
+    <style>
+    table, th, td {{
+        border: 1px solid black; border-collapse: collapse;
+        padding: 6px; text-align: center; vertical-align: middle;
+        font-family: 'Nanum Gothic', sans-serif;
+    }}
+    th, td {{
+        font-size: 14px;
+        line-height: 1.4;
 
-        }}
-        </style>
-        <br><h5>1. 신청인</h5>
-        <table>
-        <tr><td>성명</td><td></td></tr>
-        <tr><td>제조소(영업소) 명칭</td><td></td></tr>
-        <tr><td>변경신청 제품명</td><td></td></tr>
-        </table><br>
-        <h5>2. 변경유형</h5>
-        <table><tr><td>{result["title_text"]}</td></tr></table><br>
-        <h5>3. 신청유형</h5>
-        <table>
-        <tr><td>분류</td><td>{result["output_1_tag"]}</td></tr>
-        <tr><td colspan="2">{output1_html}</td></tr>
-        </table><br>
-        <h5>4. 충족조건</h5>
-        <table><tr><th>충족조건</th><th>조건 충족 여부</th></tr>
-        """
+    }}
+    </style>
+    <br><h5>1. 신청인</h5>
+    <table>
+    <tr><td>성명</td><td></td></tr>
+    <tr><td>제조소(영업소) 명칭</td><td></td></tr>
+    <tr><td>변경신청 제품명</td><td></td></tr>
+    </table><br>
+    <h5>2. 변경유형</h5>
+    <table><tr><td>{result["title_text"]}</td></tr></table><br>
+    <h5>3. 신청유형</h5>
+    <table>
+    <tr><td>분류</td><td>{result["output_1_tag"]}</td></tr>
+    <tr><td colspan="2">{output1_html}</td></tr>
+    </table><br>
+    <h5>4. 충족조건</h5>
+    <table><tr><th>충족조건</th><th>조건 충족 여부</th></tr>
+    """
 
-        req_items = list(requirements.items())
-        max_reqs = max(5, min(15, len(req_items)))
-        for idx in range(max_reqs):
-            if idx < len(req_items):
-                rk, text = req_items[idx]
-                state = selections.get(f"{current_key}_req_{rk}", "")
-                symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
-            else:
-                text = ""
-                symbol = ""
-            html += f"<tr><td style='text-align:left'>{text}</td><td>{symbol}</td></tr>"
-
-        html += "</table><br><h5>5. 필요서류</h5><table><tr><th>서류</th></tr>"
-        max_docs = max(5, min(15, len(output2_text_list)))
-        for i in range(max_docs):
-            line = output2_text_list[i] if i < len(output2_text_list) else ""
-            html += f"<tr><td style='text-align:left'>{line}</td></tr>"
-        html += "</table><br>"
-        st.markdown(html, unsafe_allow_html=True)
+    req_items = list(requirements.items())
+    max_reqs = max(5, min(15, len(req_items)))
+    for idx in range(max_reqs):
+        if idx < len(req_items):
+            rk, text = req_items[idx]
+            state = selections.get(f"{current_title_key}_req_{rk}", "")
+            symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
+        else:
+            text = ""
+            symbol = ""
+        html += f"<tr><td style='text-align:left'>{text}</td><td>{symbol}</td></tr>"
+    
+    html += "</table><br><h5>5. 필요서류</h5><table><tr><th>서류</th></tr>"
+    max_docs = max(5, min(15, len(output2_text_list)))
+    for i in range(max_docs):
+        line = output2_text_list[i] if i < len(output2_text_list) else ""
+        html += f"<tr><td style='text-align:left'>{line}</td></tr>"
+    html += "</table><br>"
+    st.markdown(html, unsafe_allow_html=True)
 
     col_left, col_right = st.columns(2)
     with col_left:
@@ -1596,4 +1573,3 @@ if st.session_state.step == 8:
                 st.session_state.step8_page -= 1
     with col_right:
         if st.button("다음 ➡") and st.session_state.step8_page < total_pages - 1:
-            st.session_state.step8_page += 1
