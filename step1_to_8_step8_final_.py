@@ -1418,15 +1418,6 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     doc = Document('제조방법변경 신청양식_empty_.docx')
     table = doc.tables[0]
 
-    def clone_row(table, row_idx):
-        new_tr = deepcopy(table.rows[row_idx]._tr)
-        table._tbl.insert(row_idx + 1, new_tr)
-        new_row = table.rows[row_idx + 1]
-        for cell in new_row.cells:
-            cell.text = ""
-            set_cell_font(cell, 11)
-        return new_row
-
     # Ensure header cells use 12pt font
     header_cells = [
         (0, 0),
@@ -1471,7 +1462,8 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     for i in range(extra_reqs):
         new_row = clone_row(table, 10 + i)
         for cell in new_row.cells:
-            set_cell_font(cell, 11)    for i in range(max_reqs):
+            set_cell_font(cell, 11)
+    for i in range(max_reqs):           
         row = 6 + i
         if i < len(req_items):
             rk, text = req_items[i]
@@ -1544,6 +1536,7 @@ if st.session_state.step == 8:
     page = st.session_state.step8_page
     total_pages = len(page_list)
     current_key, current_idx = page_list[page]
+    # Render message when there is no matching result for this page
     if current_idx is None:
         st.write(
             "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
