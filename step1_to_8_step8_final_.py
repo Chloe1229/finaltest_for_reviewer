@@ -1381,7 +1381,7 @@ if st.session_state.step == 7:
         st.write(
             "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
             "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
-            "범위에 해당하지 않는 것으로 확인됩니다"
+            "범위에 해당하지 않는 것으로 확인됩니다."
         )
 
     col1, col2 = st.columns(2)
@@ -1406,22 +1406,42 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     doc = Document('제조방법변경 신청양식_empty_.docx')
     table = doc.tables[0]
 
+    # Ensure header cells use 12pt font
+    header_cells = [
+        (0, 0),
+        (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
+        (5, 0), (5, 1), (5, 2), (5, 3), (5, 4),
+        (11, 0), (11, 1), (11, 2), (11, 3), (11, 4),
+    ]
+    for r, c in header_cells:
+        set_cell_font(table.cell(r, c), 12)
+
     # 1. 신청인: template rows 0-2, columns 2-4 hold the value area
     for r_idx, key in enumerate(["name", "site", "product"]):
         for c in range(2, 5):
-            table.cell(r_idx, c).text = ""
+            cell = table.cell(r_idx, c)
+            cell.text = ""
+            set_cell_font(cell, 11)
 
     # 2-3. 변경유형 / 신청유형 (row 4)
     change_text = result["title_text"]
     apply_text = f"{result['output_1_tag']}\n{result['output_1_text']}"
     for c in [0, 1]:
-        table.cell(4, c).text = change_text
+        cell = table.cell(4, c)
+        cell.text = change_text
+        set_cell_font(cell, 11)
     for c in [2, 3, 4]:
-        table.cell(4, c).text = apply_text
-
+        cell = table.cell(4, c)
+        cell.text = apply_text
+        set_cell_font(cell, 11)
+        
     # 4. 충족조건: rows 6-10 available
     req_items = list(requirements.items())
-    for i in range(5):
+    max_reqs = max(5, min(15, len(req_items)))
+    extra_reqs = max_reqs - 5
+    for i in range(extra_reqs):
+        clone_row(10 + i)
+    for i in range(max_reqs):
         row = 6 + i
         if i < len(req_items):
             rk, text = req_items[i]
@@ -1431,18 +1451,28 @@ def create_application_docx(current_key, result, requirements, selections, outpu
             text = ""
             symbol = ""
         for c in [0, 1, 2]:
-            table.cell(row, c).text = text
+            cell = table.cell(row, c)
+            cell.text = text
+            set_cell_font(cell, 11)
         for c in [3, 4]:
-            table.cell(row, c).text = symbol
+            cell = table.cell(row, c)
+            cell.text = symbol
+            set_cell_font(cell, 11)
 
     # 5. 필요서류: rows 12-18 available
     for i in range(7):
         row = 12 + i
         line = output2_text_list[i] if i < len(output2_text_list) else ""
         for c in [0, 1, 2]:
-            table.cell(row, c).text = line
-        table.cell(row, 3).text = ""
-        table.cell(row, 4).text = ""
+            cell = table.cell(row, c)
+            cell.text = line
+            set_cell_font(cell, 11)
+        cell = table.cell(row, 3)
+        cell.text = ""
+        set_cell_font(cell, 11)
+        cell = table.cell(row, 4)
+        cell.text = ""
+        set_cell_font(cell, 11)
 
     doc.save(file_path)
     return file_path
@@ -1500,22 +1530,26 @@ if st.session_state.step == 8:
         with open(file_path, "rb") as f:
             file_bytes = f.read()
     
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col1:
+        col_left, col_right = st.columns(2)
+        with col_left:
             st.download_button(
                 "📄 파일 다운로드",
                 file_bytes,
                 file_name=f"신청서_{current_key}_{current_idx}.docx",
             )
         os.remove(file_path)
-        with col2:
-            st.markdown(
-                f"<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시<br>{page+1} / {total_pages}</h5>",
-                unsafe_allow_html=True,
-            )
-        with col3:
+        with col_right:
             if st.button("🖨 인쇄하기"):
                 st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
+                
+        st.markdown(
+            "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
+            unsafe_allow_html=True,
+        )
 
         output1_html = result["output_1_text"].replace("\n", "<br>")
 
@@ -1552,39 +1586,39 @@ if st.session_state.step == 8:
         <td class='title' colspan='3'>4. 충족조건</td>
         <td class='title' colspan='2'>조건 충족 여부(○, X 중 선택)</td>
       </tr>
-    """
+        """
 
-    req_items = list(requirements.items())
-    max_reqs = max(5, min(15, len(req_items)))
-    for idx in range(max_reqs):
-        if idx < len(req_items):
-            rk, text = req_items[idx]
-            state = selections.get(f"{current_key}_req_{rk}", "")
-            symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
-        else:
-            text = ""
-            symbol = ""
-        html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
+        req_items = list(requirements.items())
+        max_reqs = max(5, min(15, len(req_items)))
+        for idx in range(max_reqs):
+            if idx < len(req_items):
+                rk, text = req_items[idx]
+                state = selections.get(f"{current_key}_req_{rk}", "")
+                symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
+            else:
+                text = ""
+                symbol = ""
+            html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
 
-    html += """
+        html += """
       <tr>
         <td class='title' colspan='3'>5. 필요서류 (해당하는 필요서류 기재)</td>
         <td class='title' style='width:8%'>구비 여부<br>(○, X 중 선택)</td>
         <td class='title' style='width:13%'>해당 페이지 표시</td>
       </tr>
     """
-        max_docs = max(5, min(15, len(output2_text_list)))
-        for i in range(max_docs):
-            line = output2_text_list[i] if i < len(output2_text_list) else ""
+    max_docs = max(5, min(15, len(output2_text_list)))
+    for i in range(max_docs):
+        line = output2_text_list[i] if i < len(output2_text_list) else ""
         html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
     html += "</table>"
-        st.markdown(html, unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
     else:
         st.write(
-        "해당 변경사항에 대한 충족조건을 고려하였을 때,\n",
-        "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n",
-        "범위에 해당하지 않는 것으로 확인됩니다",
-    )
+            "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
+            "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
+            "범위에 해당하지 않는 것으로 확인됩니다."
+        )
 
 col_left, col_right = st.columns(2)
 with col_left:
