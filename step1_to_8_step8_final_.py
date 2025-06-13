@@ -1434,11 +1434,12 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     for i in range(extra_reqs):
         clone_row(table, 10 + i)
 
-    for r, c in header_cells:
-        if r >= 11:
-            r += extra_reqs
-        set_cell_font(table.cell(r, c), 12)
+    doc_start = 12 + extra_reqs
 
+    for r, c in header_cells:
+        r_idx = r + extra_reqs if r >= 11 else r
+        set_cell_font(table.cell(r_idx, c), 12)
+        
     # 1. 신청인: template rows 0-2, columns 2-4 hold the value area
     for r_idx, key in enumerate(["name", "site", "product"]):
         for c in range(2, 5):
@@ -1483,11 +1484,14 @@ def create_application_docx(current_key, result, requirements, selections, outpu
             set_cell_font(cell, 11)
 
     # 5. 필요서류: rows 12-18 available
+    doc_start = 12 + extra_reqs
     output2_text_list = output2_text_list[:15]
     max_docs = max(5, len(output2_text_list))
     extra_docs = max(0, max_docs - 7)
     for i in range(extra_docs):
-        clone_row(18 + i)
+        new_row = clone_row(table, 18 + i)
+        for cell in new_row.cells:
+            set_cell_font(cell, 11)        
     for i in range(max_docs):
         row = doc_start + i
         line = output2_text_list[i] if i < len(output2_text_list) else ""
@@ -1523,7 +1527,7 @@ if st.session_state.step == 8:
         else:
             page_list.append((tkey, None))
 
-    if not page_list:ㄹ
+    if not page_list:
         st.error("결과가 없어 Step7로 돌아갑니다.")
         st.session_state.step = 7
         st.stop()
@@ -1655,6 +1659,6 @@ if st.session_state.step == 8:
                 del st.session_state["step8_page"]
         else:
             st.session_state.step8_page -= 1
-with col_right:
-    if st.button("다음 ➡") and st.session_state.step8_page < total_pages - 1:
-        st.session_state.step8_page += 1
+    with col_right:
+        if st.button("다음 ➡") and st.session_state.step8_page < total_pages - 1:
+            st.session_state.step8_page += 1
