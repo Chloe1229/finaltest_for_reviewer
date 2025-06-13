@@ -603,6 +603,8 @@ step6_items = {
     }
 }
 
+st.session_state["step6_items"] = step6_items
+
 if "step6_selections" not in st.session_state:
     st.session_state.step6_selections = {}
 
@@ -1397,96 +1399,47 @@ def set_cell_font(cell, font_size=11):
         paragraph.paragraph_format.line_spacing = 1.4
 
 def create_application_docx(current_key, result, requirements, selections, output2_text_list, file_path):
-    doc = Document()
-    para = doc.add_heading("「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시", level=0)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(12)
-    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.line_spacing = 1.4
+    # Load template to preserve all styles and merges
+    doc = Document('제조방법변경 신청양식_empty_.docx')
+    table = doc.tables[0]
 
-    para = doc.add_heading("1. 신청인", level=1)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(11)
-    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    para.paragraph_format.line_spacing = 1.4
-    table1 = doc.add_table(rows=3, cols=2)
-    table1.style = 'Table Grid'
-    table1.cell(0, 0).text = "성명"
-    table1.cell(1, 0).text = "제조소(영업소) 명칭"
-    table1.cell(2, 0).text = "변경신청 제품명"
-    for i in range(3):
-        set_cell_font(table1.cell(i, 0), 11)
-        set_cell_font(table1.cell(i, 1), 11)
+    # 1. 신청인: template rows 0-2, columns 2-4 hold the value area
+    for r_idx, key in enumerate(["name", "site", "product"]):
+        for c in range(2, 5):
+            table.cell(r_idx, c).text = ""
 
-    para = doc.add_heading("2. 변경유형", level=1)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(11)
-    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    para.paragraph_format.line_spacing = 1.4
-    table2 = doc.add_table(rows=1, cols=1)
-    table2.style = 'Table Grid'
-    table2.cell(0, 0).text = result["title_text"]
-    set_cell_font(table2.cell(0, 0), 11)
+    # 2-3. 변경유형 / 신청유형 (row 4)
+    change_text = result["title_text"]
+    apply_text = f"{result['output_1_tag']}\n{result['output_1_text']}"
+    for c in [0, 1]:
+        table.cell(4, c).text = change_text
+    for c in [2, 3, 4]:
+        table.cell(4, c).text = apply_text
 
-    para = doc.add_heading("3. 신청유형", level=1)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(11)
-    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    para.paragraph_format.line_spacing = 1.4
-    table3 = doc.add_table(rows=2, cols=2)
-    table3.style = 'Table Grid'
-    table3.cell(0, 0).text = "분류"
-    table3.cell(0, 1).text = result["output_1_tag"]
-    table3.cell(1, 0).merge(table3.cell(1, 1)).text = result["output_1_text"]
-    for row in table3.rows:
-        for cell in row.cells:
-            set_cell_font(cell, 11)
+    # 4. 충족조건: rows 6-10 available
+    req_items = list(requirements.items())
+    for i in range(5):
+        row = 6 + i
+        if i < len(req_items):
+            rk, text = req_items[i]
+            state = selections.get(f"{current_key}_req_{rk}", "")
+            symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
+        else:
+            text = ""
+            symbol = ""
+        for c in [0, 1, 2]:
+            table.cell(row, c).text = text
+        for c in [3, 4]:
+            table.cell(row, c).text = symbol
 
-    para = doc.add_heading("4. 충족조건", level=1)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(11)
-    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    para.paragraph_format.line_spacing = 1.4
-    max_reqs = max(5, min(15, len(requirements)))
-    table4 = doc.add_table(rows=max_reqs + 1, cols=2)
-    table4.style = 'Table Grid'
-    table4.cell(0, 0).text = "충족조건"
-    table4.cell(0, 1).text = "조건 충족 여부"
-    set_cell_font(table4.cell(0, 0), 11)
-    set_cell_font(table4.cell(0, 1), 11)
-    for idx, (rk, text) in enumerate(requirements.items()):
-        if idx >= max_reqs:
-            break
-        table4.cell(idx+1, 0).text = text
-        state = selections.get(f"{current_key}_req_{rk}")
-        symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
-        table4.cell(idx+1, 1).text = symbol
-        set_cell_font(table4.cell(idx+1, 0), 11)
-        set_cell_font(table4.cell(idx+1, 1), 11)
-    for idx in range(len(requirements), max_reqs):
-        table4.cell(idx+1, 0).text = ""
-        table4.cell(idx+1, 1).text = ""
-        set_cell_font(table4.cell(idx+1, 0), 11)
-        set_cell_font(table4.cell(idx+1, 1), 11)
-
-    para = doc.add_heading("5. 필요서류", level=1)
-    run = para.runs[0]
-    run.bold = True
-    run.font.size = Pt(11)
-    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    para.paragraph_format.line_spacing = 1.4
-    max_docs = max(5, min(15, len(output2_text_list)))
-    table5 = doc.add_table(rows=max_docs, cols=1)
-    table5.style = 'Table Grid'
-    for i in range(max_docs):
-        text = output2_text_list[i] if i < len(output2_text_list) else ""
-        table5.cell(i, 0).text = text
-        set_cell_font(table5.cell(i, 0), 11)
+    # 5. 필요서류: rows 12-18 available
+    for i in range(7):
+        row = 12 + i
+        line = output2_text_list[i] if i < len(output2_text_list) else ""
+        for c in [0, 1, 2]:
+            table.cell(row, c).text = line
+        table.cell(row, 3).text = ""
+        table.cell(row, 4).text = ""
 
     doc.save(file_path)
     return file_path
@@ -1494,7 +1447,7 @@ def create_application_docx(current_key, result, requirements, selections, outpu
 # Step 8 begins
 if st.session_state.step == 8:
     step7_results = st.session_state.get("step7_results", {})
-    step6_items = st.session_state.get("step6_items", {})
+    step6_items = st.session_state["step6_items"]
     step6_selections = st.session_state.get("step6_selections", {})
 
     title_keys = list(step7_results.keys())
@@ -1509,97 +1462,110 @@ if st.session_state.step == 8:
     total_pages = len(title_keys)
     current_key = title_keys[page]
     result = step7_results.get(current_key)
-    if not isinstance(result, dict):
-        st.warning("해당 페이지의 데이터 형식이 잘못되었습니다.")
-        st.stop()
-    requirements = step6_items.get(current_key, {}).get("requirements", {})
-    selections = {
-        f"{current_key}_req_{rk}": step6_selections.get(f"{current_key}_req_{rk}", "")
-        for rk in requirements
-    }
-    output2_text_list = [line.strip() for line in result.get("output_2_text", "").split("\n") if line.strip()]
-    with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        file_path = tmp.name
-        create_application_docx(
-            current_key,
-            result,
-            requirements,
-            selections,
-            output2_text_list,
-            file_path,
+    result_empty = isinstance(result, list) and len(result) == 0
+
+    if result_empty:
+        st.write(
+            "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
+            "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
+            "범위에 해당하지 않는 것으로 확인됩니다."
         )
+    else:
+        if not isinstance(result, dict):
+            st.warning("해당 페이지의 데이터 형식이 잘못되었습니다.")
+            st.stop()
+        requirements = step6_items.get(current_key, {}).get("requirements", {})
+        selections = {
+            f"{current_key}_req_{rk}": step6_selections.get(f"{current_key}_req_{rk}", "")
+            for rk in requirements
+        }
+        output2_text_list = [
+            line.strip()
+            for line in result.get("output_2_text", "").split("\n")
+            if line.strip()
+        ]
+        with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+            file_path = tmp.name
+            create_application_docx(
+                current_key,
+                result,
+                requirements,
+                selections,
+                output2_text_list,
+                file_path,
+            )
 
-    with open(file_path, "rb") as f:
-        file_bytes = f.read()
+        with open(file_path, "rb") as f:
+            file_bytes = f.read()
 
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col1:
-        st.download_button(
-            "📄 파일 다운로드",
-            file_bytes,
-            file_name=f"신청서_{current_key}.docx",
-        )
-    os.remove(file_path)
-    with col2:
-        st.markdown(
-            f"<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시<br>{page+1} / {total_pages}</h5>",
-            unsafe_allow_html=True,
-        )
-    with col3:
-        if st.button("🖨 인쇄하기"):
-            st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col1:
+            st.download_button(
+                "📄 파일 다운로드",
+                file_bytes,
+                file_name=f"신청서_{current_key}.docx",
+            )
+        os.remove(file_path)
+        with col2:
+            st.markdown(
+                f"<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시<br>{page+1} / {total_pages}</h5>",
+                unsafe_allow_html=True,
+            )
+        with col3:
+            if st.button("🖨 인쇄하기"):
+                st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
 
-    output1_html = result["output_1_text"].replace("\n", "<br>")
+        output1_html = result["output_1_text"].replace("\n", "<br>")
 
-    html = f"""
-    <style>
-    table, th, td {{
-        border: 1px solid black; border-collapse: collapse;
-        padding: 6px; text-align: center; vertical-align: middle;
-        font-family: 'Nanum Gothic', sans-serif;
-    }}
-    th, td {{
-        font-size: 14px;
-        line-height: 1.4;
+        html = f"""
+        <style>
+        table, th, td {{
+            border: 1px solid black; border-collapse: collapse;
+            padding: 6px; text-align: center; vertical-align: middle;
+            font-family: 'Nanum Gothic', sans-serif;
+        }}
+        th, td {{
+            font-size: 14px;
+            line-height: 1.4;
 
-    }}
-    </style>
-    <br><h5>1. 신청인</h5>
-    <table>
-    <tr><td>성명</td><td></td></tr>
-    <tr><td>제조소(영업소) 명칭</td><td></td></tr>
-    <tr><td>변경신청 제품명</td><td></td></tr>
-    </table><br>
-    <h5>2. 변경유형</h5>
-    <table><tr><td>{result["title_text"]}</td></tr></table><br>
-    <h5>3. 신청유형</h5>
-    <table>
-    <tr><td>분류</td><td>{result["output_1_tag"]}</td></tr>
-    <tr><td colspan="2">{output1_html}</td></tr>
-    </table><br>
-    <h5>4. 충족조건</h5>
-    <table><tr><th>충족조건</th><th>조건 충족 여부</th></tr>
-    """
+        }}
+        </style>
+        <br><h5>1. 신청인</h5>
+        <table>
+        <tr><td>성명</td><td></td></tr>
+        <tr><td>제조소(영업소) 명칭</td><td></td></tr>
+        <tr><td>변경신청 제품명</td><td></td></tr>
+        </table><br>
+        <h5>2. 변경유형</h5>
+        <table><tr><td>{result["title_text"]}</td></tr></table><br>
+        <h5>3. 신청유형</h5>
+        <table>
+        <tr><td>분류</td><td>{result["output_1_tag"]}</td></tr>
+        <tr><td colspan="2">{output1_html}</td></tr>
+        </table><br>
+        <h5>4. 충족조건</h5>
+        <table><tr><th>충족조건</th><th>조건 충족 여부</th></tr>
+        """
 
-    req_items = list(requirements.items())
-    max_reqs = max(5, min(15, len(req_items)))
-    for idx in range(max_reqs):
-        if idx < len(req_items):
-            rk, text = req_items[idx]
-            state = selections.get(f"{current_key}_req_{rk}", "")
-            symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
-        else:
-            text = ""
-            symbol = ""
-        html += f"<tr><td style='text-align:left'>{text}</td><td>{symbol}</td></tr>"
-    
-    html += "</table><br><h5>5. 필요서류</h5><table><tr><th>서류</th></tr>"
-    max_docs = max(5, min(15, len(output2_text_list)))
-    for i in range(max_docs):
-        line = output2_text_list[i] if i < len(output2_text_list) else ""
-        html += f"<tr><td style='text-align:left'>{line}</td></tr>"
-    html += "</table><br>"
-    st.markdown(html, unsafe_allow_html=True)
+        req_items = list(requirements.items())
+        max_reqs = max(5, min(15, len(req_items)))
+        for idx in range(max_reqs):
+            if idx < len(req_items):
+                rk, text = req_items[idx]
+                state = selections.get(f"{current_key}_req_{rk}", "")
+                symbol = "○" if state == "충족" else "×" if state == "미충족" else ""
+            else:
+                text = ""
+                symbol = ""
+            html += f"<tr><td style='text-align:left'>{text}</td><td>{symbol}</td></tr>"
+
+        html += "</table><br><h5>5. 필요서류</h5><table><tr><th>서류</th></tr>"
+        max_docs = max(5, min(15, len(output2_text_list)))
+        for i in range(max_docs):
+            line = output2_text_list[i] if i < len(output2_text_list) else ""
+            html += f"<tr><td style='text-align:left'>{line}</td></tr>"
+        html += "</table><br>"
+        st.markdown(html, unsafe_allow_html=True)
 
     col_left, col_right = st.columns(2)
     with col_left:
