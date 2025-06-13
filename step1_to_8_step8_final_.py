@@ -2,6 +2,7 @@ import streamlit as st
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from copy import deepcopy
 from tempfile import NamedTemporaryFile
 import os
 
@@ -1401,10 +1402,23 @@ def set_cell_font(cell, font_size=11):
             run.font.size = Pt(font_size)
         paragraph.paragraph_format.line_spacing = 1.4
 
+def clone_row(table, row_idx):
+    """Clone table row at row_idx and insert below it."""
+    tr = table.rows[row_idx]._tr
+    new_tr = deepcopy(tr)
+    table._tbl.insert(row_idx + 1, new_tr)
+    for cell in table.rows[row_idx + 1].cells:
+        cell.text = ""
+    return table.rows[row_idx + 1]
+
 def create_application_docx(current_key, result, requirements, selections, output2_text_list, file_path):
     # Load template to preserve all styles and merges
     doc = Document('제조방법변경 신청양식_empty_.docx')
     table = doc.tables[0]
+
+    def clone_row(row_idx):
+        new_tr = deepcopy(table.rows[row_idx]._tr)
+        table._tbl.insert(row_idx + 1, new_tr)
 
     # Ensure header cells use 12pt font
     header_cells = [
@@ -1413,7 +1427,16 @@ def create_application_docx(current_key, result, requirements, selections, outpu
         (5, 0), (5, 1), (5, 2), (5, 3), (5, 4),
         (11, 0), (11, 1), (11, 2), (11, 3), (11, 4),
     ]
+
+    req_items = list(requirements.items())
+    max_reqs = max(5, min(15, len(req_items)))
+    extra_reqs = max_reqs - 5
+    for i in range(extra_reqs):
+        clone_row(table, 10 + i)
+
     for r, c in header_cells:
+        if r >= 11:
+            r += extra_reqs
         set_cell_font(table.cell(r, c), 12)
 
     # 1. 신청인: template rows 0-2, columns 2-4 hold the value area
@@ -1440,7 +1463,7 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     max_reqs = max(5, min(15, len(req_items)))
     extra_reqs = max_reqs - 5
     for i in range(extra_reqs):
-        clone_row(10 + i)
+        clone_row(table, 10 + i)
     for i in range(max_reqs):
         row = 6 + i
         if i < len(req_items):
@@ -1460,8 +1483,13 @@ def create_application_docx(current_key, result, requirements, selections, outpu
             set_cell_font(cell, 11)
 
     # 5. 필요서류: rows 12-18 available
-    for i in range(7):
-        row = 12 + i
+    output2_text_list = output2_text_list[:15]
+    max_docs = max(5, len(output2_text_list))
+    extra_docs = max(0, max_docs - 7)
+    for i in range(extra_docs):
+        clone_row(18 + i)
+    for i in range(max_docs):
+        row = doc_start + i
         line = output2_text_list[i] if i < len(output2_text_list) else ""
         for c in [0, 1, 2]:
             cell = table.cell(row, c)
@@ -1495,7 +1523,7 @@ if st.session_state.step == 8:
         else:
             page_list.append((tkey, None))
 
-    if not page_list:
+    if not page_list:ㄹ
         st.error("결과가 없어 Step7로 돌아갑니다.")
         st.session_state.step = 7
         st.stop()
@@ -1506,7 +1534,13 @@ if st.session_state.step == 8:
     page = st.session_state.step8_page
     total_pages = len(page_list)
     current_key, current_idx = page_list[page]
-    if current_idx is not None:
+    if current_idx is None:
+        st.write(
+            "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
+            "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
+            "범위에 해당하지 않는 것으로 확인됩니다."
+        )
+    else:
         result = step7_results[current_key][current_idx]
         requirements = step6_items.get(current_key, {}).get("requirements", {})
 
@@ -1516,6 +1550,7 @@ if st.session_state.step == 8:
             for rk in requirements
         }
         output2_text_list = [line.strip() for line in result.get("output_2_text", "").split("\n") if line.strip()]
+        output2_text_list = output2_text_list[:15]
         with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
             file_path = tmp.name
             create_application_docx(
@@ -1607,21 +1642,12 @@ if st.session_state.step == 8:
         <td class='title' style='width:13%'>해당 페이지 표시</td>
       </tr>
     """
-    max_docs = max(5, min(15, len(output2_text_list)))
+    max_docs = max(5, len(output2_text_list))
     for i in range(max_docs):
         line = output2_text_list[i] if i < len(output2_text_list) else ""
         html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
     html += "</table>"
     st.markdown(html, unsafe_allow_html=True)
-    else:
-        st.write(
-            "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
-            "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
-            "범위에 해당하지 않는 것으로 확인됩니다."
-        )
-
-col_left, col_right = st.columns(2)
-with col_left:
     if st.button("⬅ 이전"):
         if st.session_state.step8_page == 0:
             st.session_state.step = 7
