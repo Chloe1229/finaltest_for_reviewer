@@ -141,8 +141,6 @@ Although each category presents detailed instructions and explanations, all cont
 ---
 
 ## 6. 예외처리 및 기타
-
-- 기존 title_key별로 결과가 0개일 경우는 페이지 생성에서 제외
 - 복수 결과가 있을 때만 여러 페이지로 분기, 단일 결과도 항상 리스트 기반으로 접근
 - 모든 반복문, 인덱싱, 표 생성 함수에서 title_key, idx 쌍을 기준으로 호출
 
@@ -356,7 +354,8 @@ All references, iterations, and function calls in the code must strictly follow 
         해당 변경사항에 대한 충족조건을 고려하였을 때,
         「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는
         범위에 해당하지 않는 것으로 확인됩니다.
-
+* Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+* Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
 ---
 
 ## 3. 화면 출력 로직
@@ -385,6 +384,8 @@ if not has_matching_step7_result:
         "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
         "범위에 해당하지 않는 것으로 확인됩니다"
     )
+* Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+* Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
     # 다운로드/인쇄/표는 절대 출력 금지
 else:
     # 정상 표/버튼/출력 로직
@@ -399,7 +400,8 @@ else:
     - 워드파일 다운로드 및 인쇄 기능은 비활성화/숨김 처리
     - 표/양식 그 어떤 것도 표시하지 않음
 - 이 로직은 “결과 없음” 페이지에 대해 예외 없이 엄격히 적용되어야 한다.
-
+- Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+- Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
 ---
 
 상기 요구사항 미준수시 결과물은 인정되지 않음.  
@@ -427,7 +429,8 @@ else:
 
     - (Korean original for reference:  
         "해당 변경사항에 대한 충족조건을 고려하였을 때,\n「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n범위에 해당하지 않는 것으로 확인됩니다")
-
+* Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+* Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
 ---
 
 ## 3. Screen Display Logic
@@ -438,6 +441,8 @@ else:
         - Print button
         - Any table or form fields
     - DO display only the specified message (see above).
+    - Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+    - Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
 
 ---
 
@@ -458,6 +463,8 @@ if not has_matching_step7_result:
         "presented in the \"Guidelines for Post-Approval Changes in Drug Manufacturing Methods.\""
     )
     # Do NOT render download/print buttons or tables
+    # Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+    # Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
 else:
     # Normal rendering of table, download, print, etc.
     ...
@@ -505,6 +512,8 @@ Follow the instructions, examples, and message content exactly as provided.
    - **두 번째 줄에 중앙 정렬로** “「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시” 제목만 단독 한 줄 배치. 버튼 줄과 분리!
    - **세 번째 줄에는** 페이지 번호(예: “1 / 7”)만 중앙정렬로 제목 아래 별도 한 줄 배치.
    - 어떤 경우에도 버튼 줄에 제목·페이지 번호가 오지 않도록 할 것. (줄바꿈/정렬 필수)
+   - Display the page number immediately beneath the title and above the table generation code, so that it forms the third header row.
+   - Confirm that the buttons remain on the first row, the title on the second, and the table begins below the page number.
 
 ④ **오류 태그/불필요 HTML 출력 방지**
    - 각 페이지 상단에 <br><h5>1. 신청인</h5> 등 HTML 태그가 코드 그대로 노출되지 않게.
@@ -523,7 +532,8 @@ Follow the instructions, examples, and message content exactly as provided.
    - 3줄: 페이지 번호(“현재/총페이지”) (중앙, 단독 한 줄)
    - 그 이후: 각 페이지별 표/항목 내용(불필요 HTML, 태그, 오류 문구 등 없음, 모든 표는 첨부 워드 양식 구조와 일치)
    - 버튼/제목/페이지번호가 한 줄에 섞여서 나오지 않게 반드시 분리.
-
+   - Display the page number immediately beneath the title and above the table generation code, so that it forms the third header row.
+   - Confirm that the buttons remain on the first row, the title on the second, and the table begins below the page number.
 ⑦ **레이아웃 아스키 예시**
 
 ┌──────────────────────────────────────────────┐
@@ -574,6 +584,8 @@ Follow the instructions, examples, and message content exactly as provided.
 ④ **Prevent Raw HTML/Tag/Error Output**
    - Do NOT display any raw HTML tags or unrendered code at the top of each page (e.g., `<br><h5>1. 신청인</h5>...` etc).
    - Only properly rendered tables and text data should be visible to the user.
+   - Move the code that displays the page number and renders the “⬅ 이전/다음 ➡” buttons outside the `else:` block in `step1_to_8_step8_final_.py`.
+   - Ensure these elements are shown regardless of whether `current_idx` is `None` or a valid index.
    - When using Streamlit (e.g., `st.markdown(..., unsafe_allow_html=True)`), ensure that raw HTML is rendered, not printed as literal text.
 
 ⑤ **Satisfaction Requirements Table – Omission/Error Fix**
