@@ -7,6 +7,8 @@ from tempfile import NamedTemporaryFile
 import os
 import textwrap
 import re
+import subprocess
+import platform
 
 
 # ===== 초기 상태 정의 =====
@@ -1421,6 +1423,20 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     doc = Document('제조방법변경 신청양식_empty_.docx')
     table = doc.tables[0]
 
+    # Adjust column widths and row heights according to requested ratios
+    col_widths = [col.width for col in table.columns]
+    new_first = int(col_widths[0] * 4 / 7)
+    extra = col_widths[0] - new_first
+    rest = sum(col_widths[1:])
+    new_widths = [new_first] + [int(col_widths[i] + extra * (col_widths[i] / rest)) for i in range(1, len(col_widths))]
+    for w, col in zip(new_widths, table.columns):
+        col.width = w
+
+    row_ratio = 1.2
+    for row in table.rows:
+        if row.height:
+            row.height = int(row.height * row_ratio)
+
     # Ensure header cells use 12pt font
     header_cells = [
         (0, 0),
@@ -1510,6 +1526,19 @@ def create_application_docx(current_key, result, requirements, selections, outpu
     doc.save(file_path)
     return file_path
 
+def print_word_file(path):
+    """Send the given Word document to the OS print dialog."""
+    try:
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(path, "print")
+        elif system == "Darwin":
+            subprocess.run(["open", path], check=True)
+        else:
+            subprocess.run(["lp", path], check=True)
+    except Exception as e:
+        st.error(f"인쇄 실패: {e}")
+
 # Step 8 begins
 if st.session_state.step == 8:
     step7_results = st.session_state.get("step7_results", {})
@@ -1588,18 +1617,18 @@ if st.session_state.step == 8:
                 file_bytes,
                 file_name=f"신청서_{current_key}_{current_idx}.docx",
             )
-        os.remove(file_path)
         with col_right:
             if st.button("🖨 인쇄하기"):
-                st.components.v1.html("<script>window.print();</script>", height=0)
-                
+                print_word_file(file_path)
+        os.remove(file_path)
+        
         st.markdown(
-            "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
+            f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
             unsafe_allow_html=True,
         )
 
         st.markdown(
-            f"<h6 style='text-align:center'>{page+1} / {total_pages}</h6>",
+            "<h5 style='text-align:center'>「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시</h5>",
             unsafe_allow_html=True,
         )
         
@@ -1612,28 +1641,35 @@ td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align:
 .normal {{ font-size: 11pt; }}
 </style>
 <table>
-  <tr>
-    <td class='title' rowspan='3' style='width:11%'>1. 신청인</td>
-    <td class='normal' style='width:10%'>성명</td>
-    <td colspan='3' style='width:79%'></td>
+  <colgroup>
+    <col style='width:13%'>
+    <col style='width:24%'>
+    <col style='width:12%'>
+    <col style='width:20%'>
+    <col style='width:31%'>
+  </colgroup>
+  <tr style='height:38px'>
+    <td class='title' rowspan='3'>1. 신청인</td>
+    <td class='normal'>성명</td>
+    <td colspan='3'></td>
   </tr>
-  <tr>
+  <tr style='height:38px'>
     <td class='normal'>제조소(영업소) 명칭</td>
     <td colspan='3'></td>
   </tr>
-  <tr>
+  <tr style='height:38px'>
     <td class='normal'>변경신청 제품명</td>
     <td colspan='3'></td>
   </tr>
-  <tr>
+  <tr style='height:42px'>
     <td class='title' colspan='2'>2. 변경유형</td>
     <td class='title' colspan='3'>3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택)</td>
   </tr>
-  <tr>
+  <tr style='height:83px'>
     <td colspan='2' class='normal'>{result["title_text"]}</td>
     <td colspan='3' class='normal'>{result["output_1_tag"]}</td>
   </tr>
-  <tr>
+  <tr style='height:61px'>
     <td class='title' colspan='3'>4. 충족조건</td>
     <td class='title' colspan='2'>조건 충족 여부(○, X 중 선택)</td>
   </tr>
@@ -1650,23 +1686,23 @@ td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align:
             else:
                 text = ""
                 symbol = ""
-            html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
+            html += f"<tr style='height:44px'><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
 
         html += textwrap.dedent(
             """
-  <tr>
+  <tr style='height:75px'>
     <td class='title' colspan='3'>5. 필요서류 (해당하는 필요서류 기재)</td>
-    <td class='title' style='width:8%'>구비 여부<br>(○, X 중 선택)</td>
-    <td class='title' style='width:13%'>해당 페이지 표시</td>
+    <td class='title' style='width:20%'>구비 여부<br>(○, X 중 선택)</td>
+    <td class='title' style='width:31%'>해당 페이지 표시</td>
   </tr>
 """
         )
     max_docs = max(5, len(output2_text_list))
     for i in range(max_docs):
         line = output2_text_list[i] if i < len(output2_text_list) else ""
-        html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
-    html += "</table>"
-    st.markdown(html, unsafe_allow_html=True)
+        html += f"<tr style='height:39px'><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
+        html += "</table>"
+        st.markdown(html, unsafe_allow_html=True)
 
     nav_left, nav_right = st.columns(2)
     with nav_left:
