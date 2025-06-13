@@ -1,3 +1,70 @@
+선언문
+
+[전체적인 작업목적]
+이 작업명세서는 step8의 코딩 재구성과 수정에 대해 네 가지 카테고리로 구분하여 상세히 지시합니다.
+각 카테고리별로 작업 세부지시 사항이 명확하게 구분되어 있으나, 모든 카테고리의 내용을 별개로 보지 말고 반드시 **종합적으로** 고려하여 step8의 최종 결과물에 **모두 반영**되어야 합니다.
+
+[4가지 카테고리 작업지시에서 반드시 준수할 핵심원칙]
+- step8의 표 자동화·생성 로직은 반드시 저장소에 있는 '제조방법변경 신청양식_empty_.docx' 파일을 기준 공양식으로 하며,
+- step6, step7에서 사용된 **키명(key name)**, **저장경로(key path)**, **데이터 구조(dict/list)**를 반드시 그대로 활용하여  
+  - 예시: step7_results[title_key][result_index]['output_1_text'], step7_results[title_key][result_index]['output_2_text'], step6_items[title_key]['requirements'], step6_selections[f"{title_key}_req_{k}"] 등
+- step8은 위 키 및 경로를 통해 확보된 모든 데이터를, 각 작업지시서별 세부 자동화 규칙에 따라  
+  “제조방법변경 신청양식_empty_.docx”의 구조에 1:1로 자동 채워넣고(자동화 입력),  
+  streamlit 화면에서는 이 표 구조가 **텍스트 기반 표 구조로 실시간 생성**되어야 하며,  
+  사용자가 “파일 다운로드” 버튼을 클릭하면 동일 구조로 워드(.docx) 파일이 즉시 생성·다운로드 가능해야 합니다.
+- streamlit 화면에 나타나는 표, 내용, 구조, 데이터와  
+  다운로드된 워드파일 내 표, 내용, 구조, 데이터는  
+  **완전히 동일**해야 하며,  
+  “인쇄하기”를 누를 경우에는 streamlit이 사용자의 실제 윈도우/OS 프린터 환경과 직접 연동되어,  
+  **현재 화면과 동일한 표/출력 결과**가 바로 인쇄될 수 있어야 합니다.
+- 모든 페이징(paging) 및 표 렌더링(table rendering)은  
+  **각 title_key에서 도출된 (output_1_text, output_2_text) 조합별로  
+  개별적으로 페이지·표가 생성**되어야 하며,
+  - 즉, step7_results[title_key] 리스트의 각 인덱스(result_index)가  
+    고유 조합(결과) 하나를 의미하며,  
+    **(title_key, result_index)별로 반드시 한 페이지/한 표가 독립적으로 생성**되어야 합니다.
+- 위 자동화 매핑 기준,  
+  step8 구현의 모든 코드/키/경로/결과는  
+  (title_key, result_index) 단위로 분기·반복되어,  
+  결과가 누락, 병합, 생략, 중복 없이  
+  명세된 대로 **개별 표/개별 페이지**로 구현되어야 합니다.
+
+**이 규칙을 모든 step8 코드, 화면, 워드 자동화에 일관되게 적용해야 하며, 어느 한 항목도 누락/병합/생략/무시될 수 없습니다.**
+---------
+Declaration
+
+[General Purpose of the Work]
+This specification divides the detailed coding requirements for the restructuring and correction of step8 into four categories.
+Although each category presents detailed instructions and explanations, all content must be applied comprehensively to the final implementation of step8, and should never be considered in isolation.
+
+[Critical Principle Required Across All 4 Instruction Categories]
+- The entire automation and table generation logic for step8 must use the '제조방법변경 신청양식_empty_.docx' file in the repository as the exact base template.
+- All key names, key paths, and data structures (dict/list) from step6 and step7 must be directly referenced and mapped,  
+  - Example: step7_results[title_key][result_index]['output_1_text'], step7_results[title_key][result_index]['output_2_text'], step6_items[title_key]['requirements'], step6_selections[f"{title_key}_req_{k}"], etc.
+- All data acquired from the above keys/paths must be auto-inserted into the template structure, in strict accordance with each category’s automation rules,  
+  such that the [제조방법변경 신청양식_empty_.docx] template is filled out 1:1 (cell by cell, field by field) automatically.
+- On the streamlit interface, this template table must be generated in real-time as a text-based table.  
+  When the user clicks “파일 다운로드,” the system must create and provide a Word (.docx) file that is structurally and content-wise identical to the on-screen table.
+- The table, content, and data shown on the streamlit page,  
+  and the downloaded Word file,  
+  **must be perfectly identical in structure, data, layout, and values.**  
+  When “인쇄하기” is pressed, the print environment of streamlit must be linked to the user’s local printer/OS print dialog so that the output is exactly as shown on the screen.
+- All paging and table rendering must be performed  
+  **for each unique combination of output_1_text and output_2_text for a given title_key**;  
+  that is, each result (row) in the step7_results[title_key] list (with its own result_index)  
+  represents a unique combination,  
+  and **each (title_key, result_index) pair must generate a distinct page and table** independently.
+- Following this automation mapping,  
+  all code, keys, data routing, and rendered output in step8 must  
+  branch and repeat strictly by (title_key, result_index),  
+  with no omissions, no merging, no skipping, and no duplication,  
+  so that every page and table matches the specification exactly as an individual, unique output.
+
+**This rule must be consistently applied to all step8 code, UI, and Word automation, with no item ever omitted, merged, skipped, or ignored.**
+
+----
+
+
 # 첫번째 재구성 및 수정 요청사항
 
 ## 1. 목적 및 배경
@@ -136,6 +203,7 @@ def render_result_table(title_key, result):
 
 
 
+----
 # 첫번째 재구성 및 수정 요청사항(Eng. ver) First Restructuring and Revision Request
 
 ## 1. Purpose and Background
@@ -269,6 +337,7 @@ Data access, table rendering, download functions, etc. must all use this structu
 All references, iterations, and function calls in the code must strictly follow this new pattern.
 
 
+------
 
 # 두번째 재구성 및 수정 요청사항
 
@@ -337,8 +406,6 @@ else:
 예시/지침/메시지내용은 반드시 완전히 일치하게 적용할 것.
 
 ---
-
-
 
 # 두번째 재구성 및 수정 요청사항(Eng. ver) Second Restructuring and Revision Request
 
@@ -412,7 +479,6 @@ Follow the instructions, examples, and message content exactly as provided.
 
 ---
 
-
 # 세번째 재구성 및 수정 요청사항
 
 ## 1. 목적
@@ -475,8 +541,8 @@ Follow the instructions, examples, and message content exactly as provided.
 - 각 요구사항의 충족여부를 세부적으로 검증할 예정이므로, 한 줄, 한 칸, 한 글자도 요구와 다르면 안 됨.
 - UI 및 기능 구현 시 첨부된 그림(스크린샷)과 완전히 동일한 구조로 배치할 것. (단, 위의 조정안이 더 우선)
 
-
-# Third Restructuring and Revision Request
+----
+# 세번째 재구성 및 수정 요청사항(Eng. ver) Third Restructuring and Revision Request
 
 ## 1. Purpose
 
@@ -545,6 +611,560 @@ Follow the instructions, examples, and message content exactly as provided.
 - The UI and layout must match the attached screenshots precisely unless a more explicit textual instruction above overrides them.
 
 
+----
 
 
 
+# 네번째 재구성 및 수정 요청사항
+## 1. 목적
+
+- step8의 각 페이지 및 다운로드 워드파일이 반드시 [제조방법변경 신청양식_empty_.docx]와 구조·폰트·셀 병합·열 너비·행 구성·내용·순서·셀 데이터까지 완전히 동일하게 생성되어야 하며,
+- 표/자동화/페이지/조합별 데이터 도출시 실제 코드에서 사용하는 key, 인덱스, 변수명을 모두 명확하게 표기해야 함.
+- 화면/워드의 표/데이터/셀 구조가 공양식과 100% 동일하게 보이고, 실제 값도 완벽 자동화로 들어가야 함.
+
+---
+
+## 2. 전체 표 구조 및 각 항목별 실제 자동화 매핑 (키·코드 예시 포함)
+
+────────────────────────────────────────────
+│ [파일 다운로드]                     [인쇄하기] │ ← (상단, 두 버튼. 한글로 표기)
+│         「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시         │ ← (중앙 제목, 한글 그대로)
+│                        1 / N                │ ← (페이지 번호, 자동)
+────────────────────────────────────────────
+
+
+─────────────────────────────────────────────────────
+│ 1. 신청인 (세로 3행 병합, 12pt, Bold) │ "성명" (11pt)        │ "" (공란, 입력값 없음)   │
+│                                       │ "제조소(영업소) 명칭" (11pt) │ "" (공란)              │
+│                                       │ "변경신청 제품명" (11pt)     │ "" (공란)              │
+─────────────────────────────────────────────────────
+
+- 좌측 항목명(3행): "성명", "제조소(영업소) 명칭", "변경신청 제품명"
+- 실제 데이터 자동화: 모두 (공란) 표시, 고정
+- 표 구조: 3행 2열, 셀 병합/열 너비/폰트 크기는 공양식과 동일
+- **코드상 자동화:** 직접 데이터 없음, 고정 출력(예: `st.table`/워드 표에 직접 문자열)
+
+─────────────────────────────────────────────────────────
+│ 2. 변경유형 (12pt)   │ 3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택) (12pt) │
+─────────────────────────────────────────────────────────
+│ {step7_results[title_key][idx]['title_text']} (11pt)        │ {step7_results[title_key][idx]['output_1_tag']} (11pt)        │
+│ (줄바꿈)                                                   │ {step7_results[title_key][idx]['output_1_text']} (11pt, 줄바꿈)│
+─────────────────────────────────────────────────────────
+
+- **좌측(2. 변경유형):**
+    - 자동화 값:  
+      `step7_results[title_key][idx]['title_text']`
+        (예: "3.2.P.1 완제의약품의 성상 및 조성\n9. 완제의약품(고형제제 제외)의 조성 변경")
+- **우측(3. 신청유형):**
+    - 첫줄:  
+      `step7_results[title_key][idx]['output_1_tag']`
+        (예: "Cmaj", "AR" 등)
+    - 다음줄:  
+      `step7_results[title_key][idx]['output_1_text']`
+        (예: "보고유형은 다음과 같습니다. ...")
+- **표 구조:** 2행 2열(실제는 한 행, 각 셀 줄바꿈 포함), 공양식 너비, 줄간격, 폰트(제목 12pt, 내용 11pt)
+
+────────────────────────────────────────────────────────────
+│ 4. 충족조건 (12pt)          │ 조건 충족 여부(○, X 중 선택) (12pt)      │
+────────────────────────────────────────────────────────────
+│ {step6_items[title_key]['requirements'][k]} (11pt) │ {if step6_selections[f"{title_key}_req_{k}"] == '충족':표시 = '○'if step6_selections[f"{title_key}_req_{k}"] == '미충족':표시 = '×'} (11pt) │
+│ ... (requirement 개수만큼 반복, 자동확장) ...        │  ... (requirement 개수만큼{if step6_selections[f"{title_key}_req_{k}"] == '충족':표시 = '○'if step6_selections[f"{title_key}_req_{k}"] == '미충족':표시 = '×'} (11pt) 반복, 자동확장) ...│
+────────────────────────────────────────────────────────────
+
+- **좌측:** requirements 항목(예: "1. ~조건명"), 자동 for문으로 행 생성
+    - 실제 코드:  
+      ```python
+      for k, v in step6_items[title_key]['requirements'].items():
+          좌측 = v
+          우측 = '○' if step6_selections[f"{title_key}_req_{k}"] == '충족' else '×'
+      ```
+- **표 구조:** n행 2열, requirements 개수만큼 행 생성(11pt), 머릿줄(12pt)
+
+────────────────────────────────────────────────────────────
+│ 5. 필요서류 (해당 필요서류 기재) (12pt)      │ 구비 여부 (○, X 중 선택) / 해당 페이지 표시 (12pt) │
+────────────────────────────────────────────────────────────
+│ {각 행: output_2_text에서 줄바꿈 기준 분할} (11pt) │ (항상 공란, 자동)                                           │
+│ ... 필요서류 행수만큼 ...                           │ ...                                                         │
+────────────────────────────────────────────────────────────
+
+- **좌측:**  
+    - 현재 페이지 조합의  
+      `step7_results[title_key][idx]['output_2_text']`  
+    - 줄바꿈 `\n` 기준 분할, 각 줄 한 행씩(11pt)
+- **우측:**  
+    - 각 행 모두 공란(직접 기입 없음)
+- **표 구조:** n행 2열, 필요서류 개수만큼 행 생성, 머릿줄(12pt)
+
+---
+
+### 실제 코드 키/경로 기반 명세서 (공양식 100% 일치)
+
+─────────────────────────────────────────────
+│ [파일 다운로드]                     [인쇄하기] │ ← Streamlit/Docx 모두 동일, 한글로만
+│ 「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시 │
+│                   {current_page+1} / {total_pages}                    │
+─────────────────────────────────────────────
+
+─────────────────────────────────────────────────────
+│ 1. 신청인 (세로 3행 병합, 12pt, Bold) │ "성명" (11pt)        │ "" (공란, 입력값 없음)   │
+│                                       │ "제조소(영업소) 명칭" (11pt) │ "" (공란)              │
+│                                       │ "변경신청 제품명" (11pt)     │ "" (공란)              │
+─────────────────────────────────────────────────────
+# 실제 코드 예시:
+applicant_table = [
+    ["1. 신청인", "성명", ""],
+    ["", "제조소(영업소) 명칭", ""],
+    ["", "변경신청 제품명", ""]
+]
+# 열 너비/행 높이/폰트 – docx, Streamlit 표 렌더시 공양식과 일치
+
+─────────────────────────────────────────────────────────────
+│ 2. 변경유형 (12pt, Bold)                                   │ 3. 신청유형(AR, IR, Cmin, Cmaj 중 선택) (12pt, Bold)        │
+│───────────────────────────────────────────────────────────│
+│ step7_results[title_key][idx]['title_text']   (11pt)      │ step7_results[title_key][idx]['output_1_tag'] (11pt)       │
+─────────────────────────────────────────────────────────────
+
+# 실제 코드:
+# 좌측: step7_results[title_key][idx]['title_text']
+# 우측 1행: step7_results[title_key][idx]['output_1_tag']
+# 우측 2행: step7_results[title_key][idx]['output_1_text']
+
+─────────────────────────────────────────────────────────────
+│ 4. 충족조건 (12pt, Bold)                                         │ 조건 충족 여부 (○, X, 12pt, Bold)        │
+│─────────────────────────────────────────────────────────────────│
+│ 반복 for k, v in step6_items[title_key]['requirements'].items(): │
+│   v (11pt)                                                      │ {if step6_selections[f"{title_key}_req_{k}"] == '충족':표시 = '○' if step6_selections[f"{title_key}_req_{k}"] == '미충족':표시 = '×'} (11pt) │
+│ ... (requirements 개수만큼 반복, 행 자동확장)                     │ ... (requirement 개수만큼{if step6_selections[f"{title_key}_req_{k}"] == '충족':표시 = '○'if step6_selections[f"{title_key}_req_{k}"] == '미충족':표시 = '×'} (11pt) 반복, 자동확장) ...│
+─────────────────────────────────────────────────────────────
+
+# 실제 코드:
+# for k, v in step6_items[title_key]['requirements'].items():
+#    좌측 = v
+#    우측 = '○'if step6_selections[f"{title_key}_req_{k}"] == '충족 and '×' if step6_selections[f"{title_key}_req_{k}"] == '미충족'
+
+─────────────────────────────────────────────────────────────
+│ 5. 필요서류 (12pt, Bold)      │ 구비 여부 (○, X, 12pt, Bold) / 해당 페이지 표시    │
+│───────────────────────────────────────────────────────────│
+│ for line in step7_results[title_key][idx]['output_2_text'].split('\n'): │
+│   line (11pt)                                            │   "" (공란, 자동입력 없음)                    │
+│ ... (필요서류 개수만큼 반복, 행 자동확장)                 │
+─────────────────────────────────────────────────────────────
+
+# 실제 코드:
+# for line in step7_results[title_key][idx]['output_2_text'].split('\n'):
+#     좌측 = line
+#     우측 = ""
+
+─────────────────────────────────────────────────────────────
+# 전체 페이지별, 조합별(75개 케이스) 마다 아래와 같은 매핑
+# - title_key, idx: page_list[페이지 인덱스]에서 결정
+# - step7_results[title_key][idx]: 각 조건/조합에 대한 결과
+# - step6_items[title_key]['requirements']: requirements 목록
+# - step6_selections[f"{title_key}_req_{k}"]: 충족/미충족 상태
+# 표 스타일, 병합, 열 너비, 폰트 크기/스타일, 정렬, 여백, 줄간격은  
+# 반드시 제조방법변경 신청양식_empty_.docx의 스타일, 구조와 동일하게 구현
+
+─────────────────────────────────────────────────────────────
+# 예시 코드 (페이지 단위 자동화 표 렌더링 – Streamlit/Python)
+
+def render_applicant_table():
+    return [
+        ["1. 신청인", "성명", ""],
+        ["", "제조소(영업소) 명칭", ""],
+        ["", "변경신청 제품명", ""]
+    ]
+
+def render_change_type_table(step7_results, title_key, idx):
+    return [
+        ["2. 변경유형", "3. 신청유형(AR, IR, Cmin, Cmaj 중 선택)"],
+        [
+            step7_results[title_key][idx]['title_text'],
+            f"{step7_results[title_key][idx]['output_1_tag']}\n{step7_results[title_key][idx]['output_1_text']}"
+        ]
+    ]
+
+def render_requirements_table(step6_items, step6_selections, title_key):
+    rows = []
+    for k, v in step6_items[title_key]['requirements'].items():
+        mark = '○'if step6_selections[f"{title_key}_req_{k}"] == '충족 and '×' if step6_selections[f"{title_key}_req_{k}"] == '미충족'
+        rows.append([v, mark])
+    return [["4. 충족조건", "조건 충족 여부"]] + rows
+
+def render_documents_table(step7_results, title_key, idx):
+    lines = step7_results[title_key][idx]['output_2_text'].split('\n')
+    rows = [[line, ""] for line in lines if line.strip()]
+    return [["5. 필요서류 (해당하는 필요서류 기재)", "구비 여부 (○, X 중 선택) / 해당 페이지 표시"]] + rows
+
+─────────────────────────────────────────────────────────────
+
+# 모든 표/셀/값은 위 함수의 변수 및 키로, 실제 코드상 접근(임의 설명 불허)
+# 워드파일(.docx), Streamlit 화면 모두 구조/내용/스타일 100% 일치 필수
+
+─────────────────────────────────────────────────────────────
+
+# 요약 및 주의
+- 자연어 설명·추상표현 X
+- 표/셀/내용/자동화 키·경로·구조·코드 예시로만 기술
+- 공양식 기준 미세구조(폰트, 병합, 여백, 줄간격 등) 구현 누락 불가
+- (title_key, idx)별로 반드시 개별 표 구성/데이터 자동화
+
+---
+
+## 3. 전체 코드/데이터 접근법 요약 (실제 구현 참고)
+
+- title_key, idx:  
+    - page_list = [(title_key, idx), ...]  
+    - 현재 페이지에서 title_key, idx 참조
+- step7_results:  
+    - {title_key: [ { 'title_text', 'output_1_tag', 'output_1_text', 'output_2_text' }, ... ] }
+- step6_items:  
+    - {title_key: { 'requirements': {k: v, ... } } }
+- step6_selections:  
+    - {f"{title_key}_req_{k}": '충족'/'미충족', ... }
+
+---
+
+## 4. 예시(실제 한 페이지 자동화 데이터 바인딩)
+
+예시: title_key="p1_9", idx=0
+
+- 2. 변경유형: step7_results['p1_9'][0]['title_text']
+- 3. 신청유형(AR/IR/Cmin/Cmaj): step7_results['p1_9'][0]['output_1_tag']
+- 3. 신청유형 설명: step7_results['p1_9'][0]['output_1_text']
+- 4. 충족조건:
+    - for k, v in step6_items['p1_9']['requirements'].items():
+        - 좌: v
+        - 우: '○'if step6_selections[f"{title_key}_req_{k}"] == '충족 and '×' if step6_selections[f"{title_key}_req_{k}"] == '미충족'
+- 5. 필요서류:
+    - for line in step7_results['p1_9'][0]['output_2_text'].split('\n'):
+        - 좌: line
+        - 우: 공란
+
+---
+
+## 5. 개발·테스트·문서화 지침
+
+- 표/셀/머릿줄/행/열 너비/폰트/병합/간격: [제조방법변경 신청양식_empty_.docx] 구조와 100% 일치, 화면/워드 모두
+- 자동화 매핑·코드·키명: 위 표 및 코드, 변수, 구조에 근거, 반드시 주석/명시
+- 조합별 매칭: (title_key, idx)별로 위 구조 반복 생성
+- 누락/오류/불일치 발생시 전체 작업 불인정
+
+---
+
+# 반드시 위 항목 전체가 실제 코드, 표, 데이터 매핑에 적용되어야 하며  
+한 항목도 누락 없이 개발, 테스트, 코드리뷰, 산출물 문서화에 활용할 것.
+
+
+
+정리하면,
+위 모든 자동화 매핑, 코드 경로, 셀 구조, 항목별 데이터 입력 방식이
+아래 예시처럼 “단 하나의 표(table)” 내에서
+세로로 모든 항목이 연결된 상태로 완성되어야 한다.
+
+─────────────────────────────────────────────────────────────
+│ 1. 신청인 (세로 3행 병합, 12pt, Bold) │ 성명 (11pt) │ "" (공란) │
+│ │ 제조소(영업소) 명칭 │ "" (공란) │
+│ │ 변경신청 제품명 │ "" (공란) │
+├───────────────────────────────────────┼───────────────────────┼──────────────────┤
+│ 2. 변경유형 (세로 2행 병합, 12pt, Bold) │ 3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택) (12pt, Bold) │
+│ │ step7_results[title_key][idx]['output_1_tag'] (11pt) │
+│ step7_results[title_key][idx]['title_text'] (11pt) │ step7_results[title_key][idx]['output_1_text'] (11pt, 줄바꿈) │
+├───────────────────────────────────────┴───────────────────────┴──────────────────┤
+│ 4. 충족조건 (머릿셀, 12pt, Bold, 행 병합) │ "충족조건" (11pt, Bold) │ "조건 충족 여부(○, X 중 선택)" (11pt, Bold) │
+│ 반복 for k, v in step6_items[title_key]['requirements'].items(): │ v (11pt) │'○'if step6_selections[f"{title_key}_req_{k}"] == '충족 and '×' if step6_selections[f"{title_key}_req_{k}"] == '미충족' (11pt) │
+├─────────────────────────────────────────────────────────────┼──────────────────┤
+│ 5. 필요서류 (머릿셀, 12pt, Bold, 행 병합) │ "필요서류 (해당하는 필요서류 기재)" (11pt, Bold) │ "구비 여부 (○, X 중 선택)" (11pt, Bold) │
+│ for line in step7_results[title_key][idx]['output_2_text'].split('\n'): │ line (11pt) │ "" (공란) │
+─────────────────────────────────────────────────────────────
+
+이렇게 “하나의 표” 내에서
+
+모든 셀 병합, 폰트, 정렬, 열 너비/행 높이,
+
+각 자동화 항목의 입력 방식(코드 경로/키)
+
+충족조건·필요서류의 행 확장(동적)
+
+[제조방법변경 신청양식_empty_.docx] 구조와 100% 동일
+이 반드시 적용되어야 하며,
+“여러 개 표 분리, 제목+표 따로 생성”은 절대 불가함.
+----
+
+
+# 네번째 재구성 및 수정 요청사항(Eng. ver) Fourth Revision and Correction Instruction
+
+## 1. Purpose
+
+- Each page in step8 and the downloaded Word file must be generated to be **exactly identical** to [제조방법변경 신청양식_empty_.docx] in structure, font, cell merging, column width, row configuration, content, order, and cell data.
+- When extracting data per table/automation/page/combination, all keys, indices, and variable names actually used in the code must be clearly stated.
+- Both the screen and Word table/data/cell structure must be 100% identical to the template, and every value must be filled automatically with no discrepancy.
+
+---
+
+## 2. Overall Table Structure and Actual Automation Mapping for Each Item (Including Key/Code Examples)
+
+────────────────────────────────────────────
+│ [파일 다운로드]                     [인쇄하기] │ ← (Top, both buttons. In Korean only)
+│         「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시         │ ← (Center title, keep as Korean)
+│                        1 / N                │ ← (Page number, auto)
+────────────────────────────────────────────
+
+─────────────────────────────────────────────────────
+│ 1. 신청인 (vertical merge of 3 rows, 12pt, Bold) │ "성명" (11pt)        │ "" (blank, no value)   │
+│                                       │ "제조소(영업소) 명칭" (11pt) │ "" (blank)              │
+│                                       │ "변경신청 제품명" (11pt)     │ "" (blank)              │
+─────────────────────────────────────────────────────
+
+- Left item names (3 rows): "성명", "제조소(영업소) 명칭", "변경신청 제품명"
+- Data: All display as blank, fixed.
+- Table structure: 3 rows, 2 columns, cell merge/width/font size match the template.
+- **Code automation:** No data input, direct fixed output (ex: `st.table` / direct string in Word table).
+
+─────────────────────────────────────────────────────────
+│ 2. 변경유형 (12pt)   │ 3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택) (12pt) │
+─────────────────────────────────────────────────────────
+│ {step7_results[title_key][idx]['title_text']} (11pt)        │ {step7_results[title_key][idx]['output_1_tag']} (11pt)        │
+│ (line break)                                               │ {step7_results[title_key][idx]['output_1_text']} (11pt, line break)│
+─────────────────────────────────────────────────────────
+
+- **Left (2. 변경유형):**
+    - Automated value:  
+      `step7_results[title_key][idx]['title_text']`
+        (ex: "3.2.P.1 완제의약품의 성상 및 조성\n9. 완제의약품(고형제제 제외)의 조성 변경")
+- **Right (3. 신청유형):**
+    - First line:  
+      `step7_results[title_key][idx]['output_1_tag']`
+        (ex: "Cmaj", "AR", etc.)
+    - Next line:  
+      `step7_results[title_key][idx]['output_1_text']`
+        (ex: "보고유형은 다음과 같습니다. ...")
+- **Table structure:** 2 rows, 2 columns (actually one row, line break in each cell), template width/spacing/font.
+
+────────────────────────────────────────────────────────────
+│ 4. 충족조건 (12pt)          │ 조건 충족 여부(○, X 중 선택) (12pt)      │
+────────────────────────────────────────────────────────────
+│ {step6_items[title_key]['requirements'][k]} (11pt) │ {if step6_selections[f"{title_key}_req_{k}"] == '충족': display = '○'; if step6_selections[f"{title_key}_req_{k}"] == '미충족': display = '×'} (11pt) │
+│ ... (repeat for each requirement, auto-expand) ...        │  ... (repeat for each requirement, auto-expand, same logic) ...│
+────────────────────────────────────────────────────────────
+
+- **Left:** requirements item (ex: "1. ~조건명"), auto-generated row for each item
+    - Actual code:  
+      ```python
+      for k, v in step6_items[title_key]['requirements'].items():
+          left = v
+          if step6_selections[f"{title_key}_req_{k}"] == '충족':
+              right = '○'
+          if step6_selections[f"{title_key}_req_{k}"] == '미충족':
+              right = '×'
+      ```
+- **Table structure:** n rows, 2 columns, 11pt, header row 12pt
+
+────────────────────────────────────────────────────────────
+│ 5. 필요서류 (해당 필요서류 기재) (12pt)      │ 구비 여부 (○, X 중 선택) / 해당 페이지 표시 (12pt) │
+────────────────────────────────────────────────────────────
+│ {each line: split output_2_text by line break} (11pt) │ (always blank, auto)                                           │
+│ ... repeat for number of required documents ...        │ ...                                                         │
+────────────────────────────────────────────────────────────
+
+- **Left:**  
+    - For the current page combination  
+      `step7_results[title_key][idx]['output_2_text']`  
+    - Split by '\n', each line = 1 row (11pt)
+- **Right:**  
+    - Always blank, no direct input
+- **Table structure:** n rows, 2 columns, as many rows as required documents, header row 12pt
+
+---
+
+### Code Key/Path-Based Specification (Template 100% Match)
+
+─────────────────────────────────────────────
+│ [파일 다운로드]                     [인쇄하기] │ ← Streamlit/Docx identical, in Korean only
+│ 「의약품 허가 후 제조방법 변경관리 가이드라인(민원인 안내서)」[붙임] 신청양식 예시 │
+│                   {current_page+1} / {total_pages}                    │
+─────────────────────────────────────────────
+
+─────────────────────────────────────────────────────
+│ 1. 신청인 (vertical merge of 3 rows, 12pt, Bold) │ "성명" (11pt)        │ "" (blank, no value)   │
+│                                       │ "제조소(영업소) 명칭" (11pt) │ "" (blank)              │
+│                                       │ "변경신청 제품명" (11pt)     │ "" (blank)              │
+─────────────────────────────────────────────────────
+# Example code:
+applicant_table = [
+    ["1. 신청인", "성명", ""],
+    ["", "제조소(영업소) 명칭", ""],
+    ["", "변경신청 제품명", ""]
+]
+# Column width/row height/font must match docx, including in Streamlit
+
+─────────────────────────────────────────────────────────────
+│ 2. 변경유형 (12pt, Bold)                                   │ 3. 신청유형(AR, IR, Cmin, Cmaj 중 선택) (12pt, Bold)        │
+│───────────────────────────────────────────────────────────│
+│ step7_results[title_key][idx]['title_text']   (11pt)      │ step7_results[title_key][idx]['output_1_tag'] (11pt)       │
+─────────────────────────────────────────────────────────────
+
+# Code:
+# Left: step7_results[title_key][idx]['title_text']
+# Right 1st row: step7_results[title_key][idx]['output_1_tag']
+# Right 2nd row: step7_results[title_key][idx]['output_1_text']
+
+─────────────────────────────────────────────────────────────
+│ 4. 충족조건 (12pt, Bold)                                         │ 조건 충족 여부 (○, X, 12pt, Bold)        │
+│─────────────────────────────────────────────────────────────────│
+│ for k, v in step6_items[title_key]['requirements'].items(): │
+│   v (11pt)                                                      │ if step6_selections[f"{title_key}_req_{k}"] == '충족': display = '○'; if step6_selections[f"{title_key}_req_{k}"] == '미충족': display = '×' (11pt) │
+│ ... (auto-expand for number of requirements)                     │ ... (repeat for all, auto-expand) ...│
+─────────────────────────────────────────────────────────────
+
+# Code:
+# for k, v in step6_items[title_key]['requirements'].items():
+#    left = v
+#    if step6_selections[f"{title_key}_req_{k}"] == '충족':
+#        right = '○'
+#    if step6_selections[f"{title_key}_req_{k}"] == '미충족':
+#        right = '×'
+
+─────────────────────────────────────────────────────────────
+│ 5. 필요서류 (12pt, Bold)      │ 구비 여부 (○, X, 12pt, Bold) / 해당 페이지 표시    │
+│───────────────────────────────────────────────────────────│
+│ for line in step7_results[title_key][idx]['output_2_text'].split('\n'): │
+│   line (11pt)                                            │   "" (blank, auto)                    │
+│ ... (auto-expand for number of required documents)        │
+─────────────────────────────────────────────────────────────
+
+# Code:
+# for line in step7_results[title_key][idx]['output_2_text'].split('\n'):
+#     left = line
+#     right = ""
+
+─────────────────────────────────────────────────────────────
+# For every page and combination (75 cases), mapping is as follows:
+# - title_key, idx: determined by page_list[page index]
+# - step7_results[title_key][idx]: result for each combination
+# - step6_items[title_key]['requirements']: requirements list
+# - step6_selections[f"{title_key}_req_{k}"]: '충족'/'미충족'
+# Table style, merge, column width, font, alignment, spacing: match exactly to the template docx.
+
+─────────────────────────────────────────────────────────────
+# Example function (auto table rendering per page – Streamlit/Python)
+
+def render_applicant_table():
+    return [
+        ["1. 신청인", "성명", ""],
+        ["", "제조소(영업소) 명칭", ""],
+        ["", "변경신청 제품명", ""]
+    ]
+
+def render_change_type_table(step7_results, title_key, idx):
+    return [
+        ["2. 변경유형", "3. 신청유형(AR, IR, Cmin, Cmaj 중 선택)"],
+        [
+            step7_results[title_key][idx]['title_text'],
+            f"{step7_results[title_key][idx]['output_1_tag']}\n{step7_results[title_key][idx]['output_1_text']}"
+        ]
+    ]
+
+def render_requirements_table(step6_items, step6_selections, title_key):
+    rows = []
+    for k, v in step6_items[title_key]['requirements'].items():
+        if step6_selections[f"{title_key}_req_{k}"] == '충족':
+            mark = '○'
+        elif step6_selections[f"{title_key}_req_{k}"] == '미충족':
+            mark = '×'
+        else:
+            mark = ""
+        rows.append([v, mark])
+    return [["4. 충족조건", "조건 충족 여부"]] + rows
+
+def render_documents_table(step7_results, title_key, idx):
+    lines = step7_results[title_key][idx]['output_2_text'].split('\n')
+    rows = [[line, ""] for line in lines if line.strip()]
+    return [["5. 필요서류 (해당하는 필요서류 기재)", "구비 여부 (○, X 중 선택) / 해당 페이지 표시"]] + rows
+
+─────────────────────────────────────────────────────────────
+
+# All tables/cells/values must be accessed via the above keys and variables in the code (no freeform description allowed).
+# Word file (.docx) and Streamlit screen must match structure/content/style 100%.
+
+─────────────────────────────────────────────────────────────
+
+# Summary and Notes
+- No freeform explanation or abstract description.
+- All table/cell/content/automation keys, paths, structures, and code examples only.
+- Must not miss any microstructure from the template (font, merge, spacing, etc).
+- Table/data automation must be implemented separately for each (title_key, idx).
+
+---
+
+## 3. Overall Code/Data Access Summary (for implementation)
+
+- title_key, idx:  
+    - page_list = [(title_key, idx), ...]  
+    - Use title_key, idx for each page
+- step7_results:  
+    - {title_key: [ { 'title_text', 'output_1_tag', 'output_1_text', 'output_2_text' }, ... ] }
+- step6_items:  
+    - {title_key: { 'requirements': {k: v, ... } } }
+- step6_selections:  
+    - {f"{title_key}_req_{k}": '충족'/'미충족', ... }
+
+---
+
+## 4. Example (Actual Automated Data Binding for One Page)
+
+Example: title_key="p1_9", idx=0
+
+- 2. 변경유형: step7_results['p1_9'][0]['title_text']
+- 3. 신청유형(AR/IR/Cmin/Cmaj): step7_results['p1_9'][0]['output_1_tag']
+- 3. 신청유형 설명: step7_results['p1_9'][0]['output_1_text']
+- 4. 충족조건:
+    - for k, v in step6_items['p1_9']['requirements'].items():
+        - left: v
+        - right: '○' if step6_selections['p1_9_req_' + k] == '충족'  
+                  '×' if step6_selections['p1_9_req_' + k] == '미충족'
+- 5. 필요서류:
+    - for line in step7_results['p1_9'][0]['output_2_text'].split('\n'):
+        - left: line
+        - right: blank
+
+---
+
+## 5. Development/Test/Documentation Guideline
+
+- Table/header/row/column width/font/merge/spacing: 100% match to [제조방법변경 신청양식_empty_.docx] in both UI and Word
+- Automation mapping/code/key names: refer to above table, code, variable, and structure, and annotate clearly
+- Combination mapping: repeat above structure per (title_key, idx)
+- Any omission, error, or mismatch means the work is NOT accepted
+
+---
+
+# All items above MUST be implemented in code, table, and data mapping, with NO omission in development, test, code review, or documentation.
+
+Summary:  
+All mapping, code path, cell structure, and data input mode above MUST  
+produce a **single table** in which every item is connected vertically in one structure,  
+as below:
+
+─────────────────────────────────────────────────────────────
+│ 1. 신청인 (vertical merge of 3 rows, 12pt, Bold) │ 성명 (11pt) │ "" (blank) │
+│ │ 제조소(영업소) 명칭 │ "" (blank) │
+│ │ 변경신청 제품명 │ "" (blank) │
+├───────────────────────────────────────┼───────────────────────┼──────────────────┤
+│ 2. 변경유형 (vertical merge of 2 rows, 12pt, Bold) │ 3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택) (12pt, Bold) │
+│ │ step7_results[title_key][idx]['output_1_tag'] (11pt) │
+│ step7_results[title_key][idx]['title_text'] (11pt) │ step7_results[title_key][idx]['output_1_text'] (11pt, line break) │
+├───────────────────────────────────────┴───────────────────────┴──────────────────┤
+│ 4. 충족조건 (header cell, 12pt, Bold, row merge) │ "충족조건" (11pt, Bold) │ "조건 충족 여부(○, X 중 선택)" (11pt, Bold) │
+│ for k, v in step6_items[title_key]['requirements'].items(): │ v (11pt) │ '○' if step6_selections[f"{title_key}_req_{k}"] == '충족'  
+'×' if step6_selections[f"{title_key}_req_{k}"] == '미충족' (11pt) │
+├─────────────────────────────────────────────────────────────┼──────────────────┤
+│ 5. 필요서류 (header cell, 12pt, Bold, row merge) │ "필요서류 (해당하는 필요서류 기재)" (11pt, Bold) │ "구비 여부 (○, X 중 선택)" (11pt, Bold) │
+│ for line in step7_results[title_key][idx]['output_2_text'].split('\n'): │ line (11pt) │ "" (blank) │
+─────────────────────────────────────────────────────────────
+
+In this way, within **one table**,  
+all cell merging, font, alignment, column width/row height,  
+data source (code path/key),  
+row expansion for 충족조건 and 필요서류 (dynamic),  
+must be exactly identical to [제조방법변경 신청양식_empty_.docx],  
+and **splitting into multiple tables, or rendering the title separate from the table, is absolutely prohibited.**
