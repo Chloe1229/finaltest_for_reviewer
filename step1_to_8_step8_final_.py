@@ -1346,7 +1346,10 @@ if st.session_state.step == 7:
 
     if current_key not in st.session_state.step7_results:
         st.session_state.step7_results[current_key] = []
-
+    else:
+        # Clear existing results to avoid duplicates when revisiting
+        st.session_state.step7_results[current_key].clear()
+        
     visible_results = []
     for idx in STEP7_GROUPS.get(current_key, []):
         row = STEP7_ROWS[idx]
@@ -1370,8 +1373,14 @@ if st.session_state.step == 7:
             "output_2_text": output2,
         }
         for tag, output1, output2 in visible_results:
-            st.markdown(output1, unsafe_allow_html=True)
-            st.text(output2)
+            st.session_state.step7_results[current_key].append(
+                {
+                    "title_text": step6_items[current_key]["title"],
+                    "output_1_tag": tag,
+                    "output_1_text": output1,
+                    "output_2_text": output2,
+                }
+            )
 
     else:
         st.write(
@@ -1450,18 +1459,27 @@ if st.session_state.step == 8:
     step6_items = st.session_state["step6_items"]
     step6_selections = st.session_state.get("step6_selections", {})
 
-    title_keys = list(step7_results.keys())
-    if not title_keys:
+    # Build page list using title_key and result index
+    page_list = []
+    for tkey, results in step7_results.items():
+        if isinstance(results, dict):
+            results = [results]
+            step7_results[tkey] = results
+        for idx in range(len(results)):
+            page_list.append((tkey, idx))
+
+    if not page_list:
         st.error("결과가 없어 Step7로 돌아갑니다.")
         st.session_state.step = 7
         st.stop()
+        
     if "step8_page" not in st.session_state:
         st.session_state.step8_page = 0
 
     page = st.session_state.step8_page
-    total_pages = len(title_keys)
-    current_key = title_keys[page]
-    result = step7_results.get(current_key)
+    total_pages = len(page_list)
+    current_key, current_idx = page_list[page]
+    result = step7_results[current_key][current_idx]
     result_empty = isinstance(result, list) and len(result) == 0
 
     if result_empty:
@@ -1503,7 +1521,7 @@ if st.session_state.step == 8:
             st.download_button(
                 "📄 파일 다운로드",
                 file_bytes,
-                file_name=f"신청서_{current_key}.docx",
+            file_name=f"신청서_{current_key}_{current_idx}.docx",
             )
         os.remove(file_path)
         with col2:
