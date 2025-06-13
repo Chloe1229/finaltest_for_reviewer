@@ -1521,32 +1521,37 @@ if st.session_state.step == 8:
 
         html = f"""
     <style>
-    table, th, td {{
-        border: 1px solid black; border-collapse: collapse;
-        padding: 6px; text-align: center; vertical-align: middle;
-        font-family: 'Nanum Gothic', sans-serif;
-    }}
-    th, td {{
-        font-size: 14px;
-        line-height: 1.4;
-    }}
-
+    table {{ border-collapse: collapse; width: 100%; font-family: 'Nanum Gothic', sans-serif; }}
+    td {{ border: 1px solid black; padding: 6px; text-align: center; vertical-align: middle; }}
+    .title {{ font-weight: bold; font-size: 12pt; }}
+    .normal {{ font-size: 11pt; }}
     </style>
-    <br><h5>1. 신청인</h5>
     <table>
-    <tr><td>성명</td><td></td></tr>
-    <tr><td>제조소(영업소) 명칭</td><td></td></tr>
-    <tr><td>변경신청 제품명</td><td></td></tr>
-    </table><br>
-    <h5>2. 변경유형</h5>
-    <table><tr><td>{result["title_text"]}</td></tr></table><br>
-    <h5>3. 신청유형</h5>
-    <table>
-    <tr><td>분류</td><td>{result["output_1_tag"]}</td></tr>
-    <tr><td colspan="2">{output1_html}</td></tr>
-    </table><br>
-    <h5>4. 충족조건</h5>
-    <table><tr><th>충족조건</th><th>조건 충족 여부</th></tr>
+      <tr>
+        <td class='title' rowspan='3' style='width:11%'>1. 신청인</td>
+        <td class='normal' style='width:10%'>성명</td>
+        <td colspan='3' style='width:79%'></td>
+      </tr>
+      <tr>
+        <td class='normal'>제조소(영업소) 명칭</td>
+        <td colspan='3'></td>
+      </tr>
+      <tr>
+        <td class='normal'>변경신청 제품명</td>
+        <td colspan='3'></td>
+      </tr>
+      <tr>
+        <td class='title' colspan='2'>2. 변경유형</td>
+        <td class='title' colspan='3'>3. 신청 유형(AR, IR, Cmin, Cmaj 중 선택)</td>
+      </tr>
+      <tr>
+        <td colspan='2' class='normal'>{result["title_text"]}</td>
+        <td colspan='3' class='normal'>{result["output_1_tag"]}<br>{output1_html}</td>
+      </tr>
+      <tr>
+        <td class='title' colspan='3'>4. 충족조건</td>
+        <td class='title' colspan='2'>조건 충족 여부(○, X 중 선택)</td>
+      </tr>
     """
 
     req_items = list(requirements.items())
@@ -1559,15 +1564,20 @@ if st.session_state.step == 8:
         else:
             text = ""
             symbol = ""
-        html += f"<tr><td style='text-align:left'>{text}</td><td>{symbol}</td></tr>"
-    
+        html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{text}</td><td colspan='2' class='normal'>{symbol}</td></tr>"
 
-        html += "</table><br><h5>5. 필요서류</h5><table><tr><th>서류</th></tr>"
+    html += """
+      <tr>
+        <td class='title' colspan='3'>5. 필요서류 (해당하는 필요서류 기재)</td>
+        <td class='title' style='width:8%'>구비 여부<br>(○, X 중 선택)</td>
+        <td class='title' style='width:13%'>해당 페이지 표시</td>
+      </tr>
+    """
         max_docs = max(5, min(15, len(output2_text_list)))
         for i in range(max_docs):
             line = output2_text_list[i] if i < len(output2_text_list) else ""
-            html += f"<tr><td style='text-align:left'>{line}</td></tr>"
-        html += "</table><br>"
+        html += f"<tr><td colspan='3' class='normal' style='text-align:left'>{line}</td><td class='normal'></td><td class='normal'></td></tr>"
+    html += "</table>"
         st.markdown(html, unsafe_allow_html=True)
     else:
         st.write(
