@@ -1365,16 +1365,15 @@ if st.session_state.step == 7:
             )
 
     if visible_results:
-         st.session_state.step7_results[current_key] = [
-            {
-                "title_text": step6_items[current_key]["title"],
-                "output_1_tag": tag,
-                "output_1_text": output1,
-                "output_2_text": output2,
-            }
-            for tag, output1, output2 in visible_results
-        ]
         for tag, output1, output2 in visible_results:
+            st.session_state.step7_results[current_key].append(
+                {
+                    "title_text": step6_items[current_key]["title"],
+                    "output_1_tag": tag,
+                    "output_1_text": output1,
+                    "output_2_text": output2,
+                }
+            )
             st.markdown(output1, unsafe_allow_html=True)
             st.text(output2)
 
@@ -1384,7 +1383,7 @@ if st.session_state.step == 7:
             "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
             "범위에 해당하지 않는 것으로 확인됩니다"
         )
-        
+
     col1, col2 = st.columns(2)
     with col1:
         st.button("이전단계로", on_click=go_prev_step7_page)
@@ -1393,7 +1392,6 @@ if st.session_state.step == 7:
             st.button("신청양식 확인하기", on_click=go_to_step8)
         else:
             st.button("다음단계로", on_click=go_next_step7_page)
-
 
 # ===== Step8: 신청양식 PDF 생성 =====
 
@@ -1455,22 +1453,27 @@ if st.session_state.step == 8:
     step6_items = st.session_state.get("step6_items", {})
     step6_selections = st.session_state.get("step6_selections", {})
 
-    page_list = [
-        (title_key, idx)
-        for title_key, results in step7_results.items()
-        for idx in range(len(results))
-    ]
+    # Build page list using title_key and result index
+    page_list = []
+    for tkey, results in step7_results.items():
+        if isinstance(results, dict):
+            results = [results]
+            step7_results[tkey] = results
+        for idx in range(len(results)):
+            page_list.append((tkey, idx))
+
     if not page_list:
         st.error("결과가 없어 Step7로 돌아갑니다.")
         st.session_state.step = 7
         st.stop()
+
     if "step8_page" not in st.session_state:
         st.session_state.step8_page = 0
 
     page = st.session_state.step8_page
     total_pages = len(page_list)
-    current_title_key, current_idx = page_list[page]
-    result = step7_results[current_title_key][current_idx]
+    current_key, current_idx = page_list[page]
+    result = step7_results[current_key][current_idx]
     requirements = step6_items.get(current_title_key, {}).get("requirements", {})
     
     selections = {
@@ -1497,9 +1500,8 @@ if st.session_state.step == 8:
         st.download_button(
             "📄 파일 다운로드",
             file_bytes,
-            file_name=f"신청서_{current_title_key}_{current_idx+1}.docx",
+            file_name=f"신청서_{current_key}_{current_idx}.docx",
         )
-    
     os.remove(file_path)
     with col2:
         st.markdown(
@@ -1522,8 +1524,8 @@ if st.session_state.step == 8:
     th, td {{
         font-size: 14px;
         line-height: 1.4;
-
     }}
+
     </style>
     <br><h5>1. 신청인</h5>
     <table>
